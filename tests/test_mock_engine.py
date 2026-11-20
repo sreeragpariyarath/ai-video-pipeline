@@ -1,7 +1,7 @@
 import pytest
 
 from orchestrator.engine import MockEngine
-from orchestrator.validation import JobValidationError, validate_job
+from orchestrator.validation import validate_job
 
 from conftest import TOPIC, make_job
 
@@ -74,19 +74,62 @@ def test_mock_body_durations_scale_with_target(engine):
     assert body_total == pytest.approx(23.0, abs=0.2)
 
 
-# Known limitation (audit finding, intentionally NOT fixed here): the mock hook
-# is fixed at 2.0s and body scenes scale linearly, so targets far from 35s
-# violate the 2-12s per-scene bounds and fail validation. These tests pin the
-# current behavior so a future fix is a deliberate, visible change.
+# Duration scaling: the mock now adapts its scene count and durations to the
+# target (10-60s) instead of failing validation outside a narrow band.
 
 
-def test_mock_60_second_target_currently_fails_validation():
-    with pytest.raises(JobValidationError) as excinfo:
-        validate_job(make_job(60.0))
-    assert any("durationSeconds must be 2-12s" in p for p in excinfo.value.problems)
+@pytest.mark.parametrize("target", [10.0, 25.0, 35.0, 60.0])
+def test_mock_supported_targets_pass_validation(target):
+    summary = validate_job(make_job(target))
+    tolerance = max(2.0, target * 0.08)
+    assert abs(summary["durationSeconds"] - target) <= tolerance
 
 
-def test_mock_10_second_target_currently_fails_validation():
-    with pytest.raises(JobValidationError) as excinfo:
-        validate_job(make_job(10.0))
-    assert any("durationSeconds must be 2-12s" in p for p in excinfo.value.problems)
+@pytest.mark.parametrize("target", [10.0, 25.0, 35.0, 60.0])
+def test_mock_scene_bounds_hold_for_supported_targets(target):
+    job = make_job(target)
+    scenes = job["scenes"]
+    assert 3 <= len(scenes) <= 10
+    assert 1.0 <= scenes[0]["durationSeconds"] <= 3.0
+    assert scenes[0]["type"] == "hook"
+    for scene in scenes[1:]:
+        assert 2.0 <= scene["durationSeconds"] <= 12.0
+    total = sum(scene["durationSeconds"] for scene in scenes)
+    assert total == job["durationSeconds"]
+    assert abs(total - target) <= max(2.0, target * 0.08)
+
+
+@pytest.mark.parametrize(
+    ("target", "expected_scenes"),
+    [(10.0, 5), (25.0, 5), (35.0, 5), (60.0, 6)],
+)
+def test_mock_scene_count_adapts_to_target(target, expected_scenes):
+    assert len(make_job(target)["scenes"]) == expected_scenes
+
+
+@pytest.mark.parametrize("target", [10.0, 25.0, 35.0, 60.0])
+def test_mock_output_is_deterministic(target):
+    first = make_job(target)
+    second = make_job(target)
+    for key in ("jobId", "createdAt"):
+        first.pop(key)
+        second.pop(key)
+    assert first == second
+
+
+@pytest.mark.parametrize("target", [5.0, 9.0, 61.0, 120.0])
+def test_mock_unsupported_targets_raise_clear_error(target):
+    with pytest.raises(ValueError, match="MockEngine supports target durations from 10 to 60"):
+        make_job(target)
+
+
+def test_mock_error_message_names_the_offending_target():
+    with pytest.raises(ValueError, match=r"got 90\)\. Choose a --target-seconds value"):
+        make_job(90.0)
+
+
+def test_mock_payoff_stays_last_at_every_supported_target():
+    for target in (10.0, 25.0, 35.0, 60.0):
+        scenes = make_job(target)["scenes"]
+        assert scenes[-1]["type"] == "payoff"
+        assert scenes[-1]["sources"] == []

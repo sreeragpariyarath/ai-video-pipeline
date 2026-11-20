@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 from . import prompts
 from .gemini import GeminiClient, GeminiError
 from .schemas import (
@@ -11,6 +13,7 @@ from .schemas import (
     Script,
     Source,
 )
+from .validation import MAX_SCENES, MIN_SCENES, SCENE_MAX_SECONDS, SCENE_MIN_SECONDS
 
 
 class GeminiEngine:
@@ -87,8 +90,10 @@ _MOCK_SOURCES = [
     Source(title="Mock source 3", url="https://example.com/mock-source-3"),
 ]
 
-_MOCK_SCENE_WEIGHTS = (8.0, 8.0, 9.0, 8.0)
 _MOCK_HOOK_SECONDS = 2.0
+MOCK_MIN_TARGET_SECONDS = 10.0
+MOCK_MAX_TARGET_SECONDS = 60.0
+_MOCK_PREFERRED_BODY_SCENES = 4
 
 
 def _mock_hook_text(topic: str) -> str:
@@ -96,28 +101,31 @@ def _mock_hook_text(topic: str) -> str:
     return f"{subject}. Here is what actually matters."
 
 
+def _mock_body_count(remaining: float) -> int:
+    count = _MOCK_PREFERRED_BODY_SCENES
+    if remaining > count * SCENE_MAX_SECONDS:
+        count = min(MAX_SCENES - 1, math.ceil(remaining / SCENE_MAX_SECONDS))
+    elif remaining < count * SCENE_MIN_SECONDS:
+        count = max(MIN_SCENES - 1, math.floor(remaining / SCENE_MIN_SECONDS))
+    return count
+
+
 def _mock_scenes(topic: str, target_seconds: float) -> list[dict]:
-    remaining = max(target_seconds - _MOCK_HOOK_SECONDS, 0.1)
-    weights_total = sum(_MOCK_SCENE_WEIGHTS)
-    body_durations = [
-        round(remaining * weight / weights_total, 1) for weight in _MOCK_SCENE_WEIGHTS
-    ]
-    durations = [_MOCK_HOOK_SECONDS, *body_durations]
-    return [
-        {
-            "type": "hook",
-            "durationSeconds": durations[0],
-            "narration": _mock_hook_text(topic),
-            "visual": {
-                "component": "AnimatedText",
-                "headline": topic,
-                "subheadline": "The hidden mechanism",
-            },
-            "sources": [],
-        },
+    if not MOCK_MIN_TARGET_SECONDS <= target_seconds <= MOCK_MAX_TARGET_SECONDS:
+        raise ValueError(
+            f"MockEngine supports target durations from {MOCK_MIN_TARGET_SECONDS:g} to "
+            f"{MOCK_MAX_TARGET_SECONDS:g} seconds (got {target_seconds:g}). "
+            "Choose a --target-seconds value in that range."
+        )
+    remaining = target_seconds - _MOCK_HOOK_SECONDS
+    count = _mock_body_count(remaining)
+    # Split in whole tenths of a second so the total is exact and deterministic.
+    base, extra = divmod(round(remaining * 10), count)
+    durations = [(base + (1 if index < extra else 0)) / 10 for index in range(count)]
+
+    bodies = [
         {
             "type": "explainer",
-            "durationSeconds": durations[1],
             "narration": (
                 "Strip away the surface details and the same pattern appears. "
                 "A few forces do most of the work, and the rest is noise."
@@ -131,7 +139,6 @@ def _mock_scenes(topic: str, target_seconds: float) -> list[dict]:
         },
         {
             "type": "explainer",
-            "durationSeconds": durations[2],
             "narration": (
                 "That pattern matters because it changes what you should look at first. "
                 "Most people start with the visible result instead of the underlying cause."
@@ -145,7 +152,6 @@ def _mock_scenes(topic: str, target_seconds: float) -> list[dict]:
         },
         {
             "type": "example",
-            "durationSeconds": durations[3],
             "narration": (
                 "Take a simple comparison: one approach adds pressure, while the other removes "
                 "friction. The second usually wins because it works with human behavior."
@@ -158,8 +164,22 @@ def _mock_scenes(topic: str, target_seconds: float) -> list[dict]:
             "sources": [_MOCK_SOURCES[2].url],
         },
         {
+            "type": "explainer",
+            "narration": (
+                "There is a second layer to this: the same forces repeat at a larger scale. "
+                "Once you see the pattern up close, you start noticing it everywhere."
+            ),
+            "visual": {
+                "component": "SimpleDiagram",
+                "headline": "Zoom out",
+                "items": ["Same forces", "Larger scale", "Same pattern"],
+            },
+            "sources": [_MOCK_SOURCES[0].url],
+        },
+    ][: count - 1]
+    bodies.append(
+        {
             "type": "payoff",
-            "durationSeconds": durations[4],
             "narration": (
                 f"So the next time you think about {topic}, look for the friction, "
                 "not the headline."
@@ -170,8 +190,25 @@ def _mock_scenes(topic: str, target_seconds: float) -> list[dict]:
                 "subheadline": "Look for friction",
             },
             "sources": [],
-        },
+        }
+    )
+
+    scenes = [
+        {
+            "type": "hook",
+            "durationSeconds": _MOCK_HOOK_SECONDS,
+            "narration": _mock_hook_text(topic),
+            "visual": {
+                "component": "AnimatedText",
+                "headline": topic,
+                "subheadline": "The hidden mechanism",
+            },
+            "sources": [],
+        }
     ]
+    for body, duration in zip(bodies, durations):
+        scenes.append({**body, "durationSeconds": duration})
+    return scenes
 
 
 class MockEngine:
