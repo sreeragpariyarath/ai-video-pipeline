@@ -120,3 +120,54 @@ def breakdown_prompt(
         "- Add scene sources only when the scene states a fact, using only these URLs:\n"
         f"{source_lines}"
     )
+
+
+RESEARCH_PLANNING_SYSTEM = (
+    "You are a research planner for cinematic short explainer videos about business, "
+    "technology, AI, money, products, and hidden systems. "
+    "You design investigations: you never answer the research questions, write narration, "
+    "or state unverified assumptions as facts."
+)
+
+
+def research_planning_prompt(
+    topic: str, target_seconds: float, context: str | None = None
+) -> str:
+    if target_seconds <= 20:
+        depth = "3-4 research questions"
+    elif target_seconds <= 45:
+        depth = "4-6 research questions"
+    else:
+        depth = "6-8 research questions"
+    lines = [
+        f"Topic: {topic}",
+        f"Target video duration: {target_seconds:g} seconds.",
+        f"Plan {depth} so the story fits the duration.",
+    ]
+    if context:
+        lines.append(f"Video context: {context}")
+    lines.append(
+        "\nProduce a research plan, not research results:\n"
+        "- core_question: the single question the video must answer, sharper than the topic.\n"
+        "- research_questions: break the topic into sub-questions about mechanisms, causes, "
+        "consequences, economics, trade-offs, and real-world examples where relevant. "
+        "Do not merely restate the topic. Prefer questions whose answers are surprising or "
+        "clarifying, and prioritize the ones needed for a coherent story. "
+        "Give each an ID q1, q2, ... in priority order.\n"
+        "- For each question: reason (why it matters to the story), priority (high/medium/low), "
+        "and expected_evidence describing the kind of evidence that would answer it "
+        "(e.g. 'official pricing filings'), never invented numbers or findings.\n"
+        "- search_queries: 1-2 specific keyword-style web searches per question, each listing "
+        "the question_ids it serves and its purpose. Avoid question-style queries.\n"
+        "- source_preferences: preferred_categories (e.g. official statistics, company filings, "
+        "documentation, peer-reviewed studies, reputable journalism), avoid_or_caution "
+        "(e.g. content marketing, forums, SEO listicles), and prefer_primary_sources.\n"
+        "- story_directions: 2-3 possible angles, each with angle, description, and "
+        "questions_to_explore referencing question IDs. Directions are hypotheses to "
+        "investigate, not established facts.\n"
+        "- target_audience: who the video speaks to.\n"
+        f'- Set topic to "{topic}" and target_seconds to {target_seconds:g} exactly.\n'
+        "Do not answer any question, do not write a script, and do not invent facts, "
+        "numbers, or sources."
+    )
+    return "\n".join(lines)

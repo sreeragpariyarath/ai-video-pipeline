@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Annotated, Literal
 from urllib.parse import urlparse
 
@@ -123,6 +123,80 @@ class ResearchPackage(BaseModel):
                     problems.append(
                         f"story_angles[{index}] ('{angle.title}') references "
                         f"unknown claim ID: {claim_id}"
+                    )
+
+        if problems:
+            raise ValueError("; ".join(problems))
+        return self
+
+
+QuestionPriority = Literal["high", "medium", "low"]
+
+PositiveSeconds = Annotated[
+    float, Field(gt=0, allow_inf_nan=False), BeforeValidator(_reject_bool)
+]
+
+
+class ResearchQuestion(BaseModel):
+    question_id: NonEmptyStr
+    question: NonEmptyStr
+    reason: NonEmptyStr
+    priority: QuestionPriority
+    expected_evidence: NonEmptyStr
+
+
+class SearchQuery(BaseModel):
+    query: NonEmptyStr
+    question_ids: list[NonEmptyStr] = Field(min_length=1, max_length=12)
+    purpose: NonEmptyStr
+
+
+class SourcePreferences(BaseModel):
+    preferred_categories: list[NonEmptyStr] = Field(min_length=1, max_length=8)
+    avoid_or_caution: list[NonEmptyStr] = Field(default_factory=list, max_length=8)
+    prefer_primary_sources: bool = True
+
+
+class StoryDirection(BaseModel):
+    angle: NonEmptyStr
+    description: NonEmptyStr
+    questions_to_explore: list[NonEmptyStr] = Field(min_length=1, max_length=12)
+
+
+class ResearchPlan(BaseModel):
+    topic: NonEmptyStr
+    core_question: NonEmptyStr
+    research_questions: list[ResearchQuestion] = Field(min_length=1, max_length=12)
+    search_queries: list[SearchQuery] = Field(min_length=1, max_length=24)
+    source_preferences: SourcePreferences
+    story_directions: list[StoryDirection] = Field(min_length=1, max_length=6)
+    target_audience: NonEmptyStr
+    target_seconds: PositiveSeconds
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @model_validator(mode="after")
+    def _check_question_references(self) -> ResearchPlan:
+        problems: list[str] = []
+
+        seen: set[str] = set()
+        for question in self.research_questions:
+            if question.question_id in seen:
+                problems.append(f"duplicate question ID: {question.question_id}")
+            seen.add(question.question_id)
+
+        for index, query in enumerate(self.search_queries):
+            for question_id in query.question_ids:
+                if question_id not in seen:
+                    problems.append(
+                        f"search_queries[{index}] references unknown question ID: {question_id}"
+                    )
+
+        for index, direction in enumerate(self.story_directions):
+            for question_id in direction.questions_to_explore:
+                if question_id not in seen:
+                    problems.append(
+                        f"story_directions[{index}] ('{direction.angle}') references "
+                        f"unknown question ID: {question_id}"
                     )
 
         if problems:
