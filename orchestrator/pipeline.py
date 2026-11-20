@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
+import tempfile
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -63,7 +66,7 @@ def build_job(
     )
     return {
         "schemaVersion": 2,
-        "jobId": f"{slugify(topic)}-{now.strftime('%Y%m%d%H%M%S')}",
+        "jobId": f"{slugify(topic)}-{now.strftime('%Y%m%d%H%M%S%f')}-{uuid.uuid4().hex[:6]}",
         "createdAt": now.isoformat(),
         "topic": topic,
         "status": "scripted",
@@ -90,12 +93,33 @@ def build_job(
     }
 
 
-def save_job(job: dict, path: Path) -> Path:
+def _atomic_write_json(job: dict, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(job, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
+    fd, tmp_name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(job, handle, indent=2, ensure_ascii=False)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_path, path)
+    except BaseException:
+        tmp_path.unlink(missing_ok=True)
+        raise
+
+
+def save_job(job: dict, path: Path) -> Path:
+    if path.exists():
+        raise FileExistsError(
+            f"Job file already exists: {path}. Refusing to overwrite an existing job."
+        )
+    _atomic_write_json(job, path)
+    return path
+
+
+def write_latest(job: dict, path: Path) -> Path:
+    _atomic_write_json(job, path)
     return path
 
 
@@ -161,10 +185,12 @@ def run(
     )
 
     print("[7/7] Save job ...")
-    path = save_job(job, out_path)
-    print(f"      {path}")
+    job_path = save_job(job, JOBS_DIR / f"{job['jobId']}.json")
+    latest_path = write_latest(job, out_path)
+    print(f"      {job_path}")
+    print(f"      {latest_path}")
     print(f"\nCreated job: {job['jobId']}")
-    return job, path
+    return job, latest_path
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -193,9 +219,14 @@ def main(argv: list[str] | None = None) -> int:
         "--out",
         type=Path,
         default=DEFAULT_OUT,
-        help=f"Output path (default: {DEFAULT_OUT}).",
+        help=(
+            "Destination for the latest-job copy (relative paths resolve against the "
+            f"repo root; default: {DEFAULT_OUT}). Each job is also archived as "
+            "output/jobs/<jobId>.json."
+        ),
     )
     args = parser.parse_args(argv)
+    out_path = args.out if args.out.is_absolute() else ROOT / args.out
 
     try:
         run(
@@ -203,9 +234,9 @@ def main(argv: list[str] | None = None) -> int:
             mock=args.mock,
             model=args.model,
             target_seconds=args.target_seconds,
-            out_path=args.out,
+            out_path=out_path,
         )
-    except (GeminiError, ValueError) as exc:
+    except (GeminiError, ValueError, OSError) as exc:
         print(f"\nPipeline failed: {exc}", file=sys.stderr)
         return 1
     return 0

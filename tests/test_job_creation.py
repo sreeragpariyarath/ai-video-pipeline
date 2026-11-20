@@ -44,9 +44,9 @@ def test_build_job_format_and_generation(valid_job):
     }
 
 
-def test_build_job_id_uses_slug_and_utc_timestamp(valid_job):
+def test_build_job_id_uses_slug_timestamp_and_random_suffix(valid_job):
     assert re.fullmatch(
-        r"why-is-netflix-cheaper-than-cable-tv-\d{14}", valid_job["jobId"]
+        r"why-is-netflix-cheaper-than-cable-tv-\d{20}-[0-9a-f]{6}", valid_job["jobId"]
     )
 
 
