@@ -1,0 +1,9 @@
+node_modules/
+venv/
+.venv/
+__pycache__/
+*.pyc
+.env
+output/jobs/
+output/videos/*.mp4
+.DS_Store
