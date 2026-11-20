@@ -7,6 +7,7 @@ from .gemini import GeminiClient
 from .prompts import RESEARCH_PLANNING_SYSTEM, research_planning_prompt
 from .research_schemas import (
     ResearchPlan,
+    ResearchPlanContent,
     ResearchQuestion,
     SearchQuery,
     SourcePreferences,
@@ -15,10 +16,17 @@ from .research_schemas import (
 
 
 def _validate_inputs(topic: str, target_seconds: float) -> str:
+    if not isinstance(topic, str):
+        raise ValueError("Topic must be a string.")
     topic = topic.strip()
     if not topic:
         raise ValueError("Topic must not be empty.")
-    if not math.isfinite(target_seconds) or target_seconds <= 0:
+    if (
+        isinstance(target_seconds, bool)
+        or not isinstance(target_seconds, (int, float))
+        or not math.isfinite(target_seconds)
+        or target_seconds <= 0
+    ):
         raise ValueError("Target duration must be a finite number greater than 0.")
     return topic
 
@@ -35,19 +43,19 @@ class ResearchPlanner:
         context: str | None = None,
     ) -> ResearchPlan:
         topic = _validate_inputs(topic, target_seconds)
-        plan = self._client.generate_json(
+        content = self._client.generate_json(
             system=RESEARCH_PLANNING_SYSTEM,
             prompt=research_planning_prompt(topic, target_seconds, context),
-            schema=ResearchPlan,
+            schema=ResearchPlanContent,
             temperature=0.5,
         )
-        # The planner owns identity and timing; the model only supplies content.
-        return plan.model_copy(
-            update={
-                "topic": topic,
-                "target_seconds": target_seconds,
-                "created_at": datetime.now(timezone.utc),
-            }
+        # Constructor re-validates everything; application-owned values never
+        # come from the model.
+        return ResearchPlan(
+            topic=topic,
+            target_seconds=target_seconds,
+            created_at=datetime.now(timezone.utc),
+            **content.model_dump(),
         )
 
 

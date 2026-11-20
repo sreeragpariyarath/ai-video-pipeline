@@ -153,8 +153,8 @@ class SearchQuery(BaseModel):
 
 class SourcePreferences(BaseModel):
     preferred_categories: list[NonEmptyStr] = Field(min_length=1, max_length=8)
-    avoid_or_caution: list[NonEmptyStr] = Field(default_factory=list, max_length=8)
-    prefer_primary_sources: bool = True
+    avoid_or_caution: list[NonEmptyStr] = Field(max_length=8)
+    prefer_primary_sources: bool
 
 
 class StoryDirection(BaseModel):
@@ -163,19 +163,18 @@ class StoryDirection(BaseModel):
     questions_to_explore: list[NonEmptyStr] = Field(min_length=1, max_length=12)
 
 
-class ResearchPlan(BaseModel):
-    topic: NonEmptyStr
+class ResearchPlanContent(BaseModel):
+    """AI-generated content only; application-owned fields live on ResearchPlan."""
+
     core_question: NonEmptyStr
     research_questions: list[ResearchQuestion] = Field(min_length=1, max_length=12)
     search_queries: list[SearchQuery] = Field(min_length=1, max_length=24)
     source_preferences: SourcePreferences
     story_directions: list[StoryDirection] = Field(min_length=1, max_length=6)
     target_audience: NonEmptyStr
-    target_seconds: PositiveSeconds
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @model_validator(mode="after")
-    def _check_question_references(self) -> ResearchPlan:
+    def _check_question_references(self) -> ResearchPlanContent:
         problems: list[str] = []
 
         seen: set[str] = set()
@@ -185,6 +184,8 @@ class ResearchPlan(BaseModel):
             seen.add(question.question_id)
 
         for index, query in enumerate(self.search_queries):
+            if len(set(query.question_ids)) != len(query.question_ids):
+                problems.append(f"search_queries[{index}] repeats question IDs")
             for question_id in query.question_ids:
                 if question_id not in seen:
                     problems.append(
@@ -192,6 +193,8 @@ class ResearchPlan(BaseModel):
                     )
 
         for index, direction in enumerate(self.story_directions):
+            if len(set(direction.questions_to_explore)) != len(direction.questions_to_explore):
+                problems.append(f"story_directions[{index}] repeats question IDs")
             for question_id in direction.questions_to_explore:
                 if question_id not in seen:
                     problems.append(
@@ -202,3 +205,9 @@ class ResearchPlan(BaseModel):
         if problems:
             raise ValueError("; ".join(problems))
         return self
+
+
+class ResearchPlan(ResearchPlanContent):
+    topic: NonEmptyStr
+    target_seconds: PositiveSeconds
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

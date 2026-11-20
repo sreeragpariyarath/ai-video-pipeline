@@ -1,5 +1,6 @@
 import copy
 import math
+from datetime import timedelta
 
 import pytest
 from pydantic import ValidationError
@@ -7,7 +8,7 @@ from pydantic import ValidationError
 from orchestrator.gemini import GeminiClient
 from orchestrator.prompts import RESEARCH_PLANNING_SYSTEM, research_planning_prompt
 from orchestrator.research_planner import MockResearchPlanner, ResearchPlanner
-from orchestrator.research_schemas import ResearchPlan
+from orchestrator.research_schemas import ResearchPlan, ResearchPlanContent
 
 from conftest import make_response
 
@@ -48,6 +49,19 @@ PLAN = {
 
 def make_plan(**overrides) -> ResearchPlan:
     return ResearchPlan.model_validate({**PLAN, **overrides})
+
+
+CONTENT = {
+    key: PLAN[key]
+    for key in (
+        "core_question",
+        "research_questions",
+        "search_queries",
+        "source_preferences",
+        "story_directions",
+        "target_audience",
+    )
+}
 
 
 def test_valid_plan_constructs_and_round_trips():
@@ -194,6 +208,78 @@ def test_planning_prompt_includes_optional_context():
     assert "Video context" not in research_planning_prompt("A topic", 35.0)
 
 
+def test_planning_prompt_separates_id_order_from_priority():
+    prompt = research_planning_prompt("A topic", 35.0)
+    assert "sequentially in the recommended investigation order" in prompt
+    assert "priority independently" in prompt
+    assert "do not imply equal" in prompt
+
+
+# --- Content-only schema (Gemini boundary) ---
+
+
+def test_content_schema_has_no_app_owned_or_unsupported_features():
+    schema = ResearchPlanContent.model_json_schema()
+    assert set(schema["properties"]) == set(CONTENT)
+    assert set(schema["required"]) == set(CONTENT)
+    for owned in ("topic", "target_seconds", "created_at"):
+        assert owned not in schema["properties"]
+
+    unsupported = []
+
+    def walk(node):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key in {"anyOf", "oneOf", "default", "format"}:
+                    unsupported.append(key)
+                if key == "$ref":
+                    assert value.split("/")[-1] in schema.get("$defs", {})
+                walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(schema)
+    assert unsupported == []
+
+
+def test_content_model_enforces_references_without_app_fields():
+    content = ResearchPlanContent.model_validate(CONTENT)
+    assert content.core_question == PLAN["core_question"]
+    bad = {**CONTENT, "search_queries": [{**QUERY, "question_ids": ["q9"]}]}
+    with pytest.raises(ValidationError, match="unknown question ID: q9"):
+        ResearchPlanContent.model_validate(bad)
+
+
+def test_duplicate_query_references_rejected():
+    questions = [QUESTION, {**QUESTION, "question_id": "q2", "question": "Another?"}]
+    with pytest.raises(ValidationError, match=r"search_queries\[0\] repeats question IDs"):
+        make_plan(
+            research_questions=questions,
+            search_queries=[{**QUERY, "question_ids": ["q1", "q1"]}],
+        )
+
+
+def test_duplicate_direction_references_rejected():
+    questions = [QUESTION, {**QUESTION, "question_id": "q2", "question": "Another?"}]
+    with pytest.raises(ValidationError, match=r"story_directions\[0\] repeats question IDs"):
+        make_plan(
+            research_questions=questions,
+            story_directions=[{**DIRECTION, "questions_to_explore": ["q1", "q1"]}],
+        )
+
+
+def test_unique_multi_references_are_valid():
+    questions = [QUESTION, {**QUESTION, "question_id": "q2", "question": "Another?"}]
+    plan = make_plan(
+        research_questions=questions,
+        search_queries=[{**QUERY, "question_ids": ["q1", "q2"]}],
+        story_directions=[{**DIRECTION, "questions_to_explore": ["q2", "q1"]}],
+    )
+    assert plan.search_queries[0].question_ids == ["q1", "q2"]
+    assert plan.story_directions[0].questions_to_explore == ["q2", "q1"]
+
+
 # --- Gemini planner (fake SDK, no network) ---
 
 
@@ -203,29 +289,55 @@ def planner(fake_sdk, monkeypatch):
     return ResearchPlanner(GeminiClient()), fake_sdk
 
 
-def test_planner_returns_validated_plan_and_owns_identity_fields(planner):
+def test_planner_requests_content_only_and_owns_identity_fields(planner):
     client_planner, fake_sdk = planner
-    drifted = ResearchPlan.model_validate({**PLAN, "topic": "DRIFTED", "target_seconds": 99.0})
-    fake_sdk.responses.append(make_response(parsed=drifted))
+    content = ResearchPlanContent.model_validate(CONTENT)
+    fake_sdk.responses.append(make_response(parsed=content))
     result = client_planner.plan("Why is streaming cheaper?", target_seconds=35.0)
     assert isinstance(result, ResearchPlan)
     assert result.topic == "Why is streaming cheaper?"
     assert result.target_seconds == 35.0
-    assert result.created_at.tzinfo is not None
+    assert result.created_at.utcoffset() == timedelta(0)
     call = fake_sdk.calls[0]
-    assert call.config.response_schema is ResearchPlan
+    assert call.config.response_schema is ResearchPlanContent
     assert "Why is streaming cheaper?" in call.contents
     assert "35 seconds" in call.contents
 
 
-def test_planner_rejects_bad_inputs_before_any_call(planner):
+def test_planner_passes_context_into_request(planner):
     client_planner, fake_sdk = planner
-    with pytest.raises(ValueError, match="Topic must not be empty"):
-        client_planner.plan("   ")
-    with pytest.raises(ValueError, match="greater than 0"):
-        client_planner.plan("A topic", target_seconds=0)
-    with pytest.raises(ValueError, match="greater than 0"):
-        client_planner.plan("A topic", target_seconds=math.nan)
+    fake_sdk.responses.append(
+        make_response(parsed=ResearchPlanContent.model_validate(CONTENT))
+    )
+    client_planner.plan("A topic", context="vertical short for beginners")
+    assert "Video context: vertical short for beginners" in fake_sdk.calls[0].contents
+
+
+@pytest.mark.parametrize("target", [35, 35.0, 10, 60.5])
+def test_planner_accepts_int_and_float_targets(planner, target):
+    client_planner, fake_sdk = planner
+    fake_sdk.responses.append(
+        make_response(parsed=ResearchPlanContent.model_validate(CONTENT))
+    )
+    result = client_planner.plan("A topic", target_seconds=target)
+    assert result.target_seconds == float(target)
+
+
+@pytest.mark.parametrize(
+    "target", [True, False, 0, 0.0, -5, math.nan, math.inf, -math.inf, "35", None]
+)
+def test_planner_rejects_invalid_durations_before_any_call(planner, target):
+    client_planner, fake_sdk = planner
+    with pytest.raises(ValueError, match="Target duration"):
+        client_planner.plan("A topic", target_seconds=target)
+    assert fake_sdk.calls == []
+
+
+@pytest.mark.parametrize("topic", [None, 123, "", "   "])
+def test_planner_rejects_invalid_topics_before_any_call(planner, topic):
+    client_planner, fake_sdk = planner
+    with pytest.raises(ValueError, match="Topic"):
+        client_planner.plan(topic)
     assert fake_sdk.calls == []
 
 
@@ -251,8 +363,20 @@ def test_mock_planner_is_deterministic():
     assert first == second
 
 
-def test_mock_planner_rejects_bad_inputs():
-    with pytest.raises(ValueError, match="Topic must not be empty"):
-        MockResearchPlanner().plan("  ")
-    with pytest.raises(ValueError, match="greater than 0"):
-        MockResearchPlanner().plan("A topic", target_seconds=-1)
+@pytest.mark.parametrize(
+    "target", [True, False, 0, -5, math.nan, math.inf, "35", None]
+)
+def test_mock_planner_rejects_invalid_durations_consistently(target):
+    with pytest.raises(ValueError, match="Target duration"):
+        MockResearchPlanner().plan("A topic", target_seconds=target)
+
+
+@pytest.mark.parametrize("topic", [None, 123, "", "  "])
+def test_mock_planner_rejects_invalid_topics(topic):
+    with pytest.raises(ValueError, match="Topic"):
+        MockResearchPlanner().plan(topic)
+
+
+def test_mock_planner_accepts_int_target():
+    plan = MockResearchPlanner().plan("A topic", target_seconds=35)
+    assert plan.target_seconds == 35.0
