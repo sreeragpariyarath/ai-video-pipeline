@@ -14,9 +14,11 @@ RESEARCH_EXTRACT_SYSTEM = (
     "Only use the supplied source URLs, copied exactly. Never invent a URL."
 )
 
+HOOK_MAX_WORDS = 7
+
 HOOK_SYSTEM = (
     "You write opening hooks for vertical explainer videos. "
-    "Hooks are accurate, specific, conversational, and under 12 words. "
+    f"Hooks are accurate, specific, conversational, and at most {HOOK_MAX_WORDS} words. "
     "Never overpromise or mislead."
 )
 
@@ -32,11 +34,12 @@ BREAKDOWN_SYSTEM = (
 )
 
 
-def research_prompt(topic: str) -> str:
+def research_prompt(topic: str, target_seconds: float) -> str:
     return (
         f"Research this topic for a vertical explainer video:\n{topic}\n\n"
         "Use Google Search to gather verifiable, current facts. Focus on details that are "
-        "surprising, clarifying, or directly useful for a 35-second video aimed at a general audience.\n"
+        f"surprising, clarifying, or directly useful for a {target_seconds:g}-second video "
+        "aimed at a general audience.\n"
         "Write 120-180 words of research notes. Note any uncertainty or conflicting claims."
     )
 
@@ -60,9 +63,9 @@ def hook_prompt(topic: str, research: ResearchBundle) -> str:
         f"Topic: {topic}\n\n"
         f"Research summary:\n{research.summary}\n\n"
         f"Key facts:\n{facts}\n\n"
-        "Write one opening hook that can be spoken in 1-3 seconds (at most 10 words). "
-        "It must be accurate and make the viewer want the explanation. "
-        "Also write two alternative hooks."
+        f"Write one opening hook of at most {HOOK_MAX_WORDS} words that can be spoken in 1-3 seconds. "
+        "It must tease the explanation rather than give it away: accurate, compelling, and concise. "
+        f"Also write two alternative hooks, each at most {HOOK_MAX_WORDS} words."
     )
 
 
@@ -113,7 +116,7 @@ def breakdown_prompt(
         f"- Durations must add up to {target_seconds:g} seconds (between {low:g} and {high:g}).\n"
         "- Keep the narration in script order and do not rewrite the facts.\n"
         "- Each scene gets one visual: AnimatedText (headline plus optional subheadline) "
-        "or SimpleDiagram (headline plus 2-4 short items).\n"
+        "or SimpleDiagram (headline plus 1-6 short items).\n"
         "- Add scene sources only when the scene states a fact, using only these URLs:\n"
         f"{source_lines}"
     )

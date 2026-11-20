@@ -17,10 +17,10 @@ class GeminiEngine:
     def __init__(self, client: GeminiClient):
         self._client = client
 
-    def research(self, topic: str) -> ResearchBundle:
+    def research(self, topic: str, target_seconds: float) -> ResearchBundle:
         notes, raw_sources = self._client.generate_grounded(
             system=prompts.RESEARCH_SYSTEM,
-            prompt=prompts.research_prompt(topic),
+            prompt=prompts.research_prompt(topic, target_seconds),
         )
         if not raw_sources:
             raise GeminiError(
@@ -175,7 +175,8 @@ def _mock_scenes(topic: str, target_seconds: float) -> list[dict]:
 
 
 class MockEngine:
-    def research(self, topic: str) -> ResearchBundle:
+    # target_seconds is accepted for interface parity; mock research is duration-independent.
+    def research(self, topic: str, target_seconds: float | None = None) -> ResearchBundle:
         facts = [
             Fact(
                 claim=f"Mock fact {index + 1} about {topic}: placeholder detail for pipeline testing.",

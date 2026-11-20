@@ -125,7 +125,7 @@ def run(
         provider, model_name, mode = "google", client.model, "live"
 
     print("[2/7] Research & fact collection ...")
-    research = engine.research(topic)
+    research = engine.research(topic, target_seconds)
     print(f"      {len(research.facts)} facts, {len(research.sources)} sources")
 
     print("[3/7] Hook generation ...")
