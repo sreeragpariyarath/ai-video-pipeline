@@ -1,6 +1,10 @@
+import math
+
 import pytest
 
 from orchestrator.validation import JobValidationError, validate_job
+
+from conftest import make_job
 
 
 def expect_rejected(job, fragment=None):
@@ -151,3 +155,122 @@ def test_non_numeric_duration_rejected(valid_job):
 def test_boolean_duration_rejected(valid_job):
     valid_job["scenes"][1]["durationSeconds"] = True
     expect_rejected(valid_job, "must be a positive number")
+
+
+# --- Hardening rules (Task 5) ---
+
+
+def test_declared_total_mismatch_rejected(valid_job):
+    valid_job["durationSeconds"] = 99.0
+    expect_rejected(valid_job, "must equal the scene duration sum")
+
+
+def test_declared_total_missing_rejected(valid_job):
+    del valid_job["durationSeconds"]
+    expect_rejected(valid_job, "durationSeconds must be a positive number")
+
+
+@pytest.mark.parametrize("value", [0, -5, math.nan, math.inf, True, "35"])
+def test_declared_total_invalid_values_rejected(valid_job, value):
+    valid_job["durationSeconds"] = value
+    expect_rejected(valid_job, "durationSeconds must be a positive number")
+
+
+def test_declared_total_within_rounding_passes(valid_job):
+    valid_job["durationSeconds"] = 35.005
+    validate_job(valid_job)
+
+
+def test_declared_total_beyond_rounding_rejected(valid_job):
+    valid_job["durationSeconds"] = 35.02
+    expect_rejected(valid_job, "must equal the scene duration sum")
+
+
+def test_hook_narration_mismatch_rejected(valid_job):
+    valid_job["scenes"][0]["narration"] = "A completely different opening line."
+    expect_rejected(valid_job, "must match hook.text")
+
+
+def test_hook_narration_whitespace_difference_tolerated(valid_job):
+    valid_job["hook"]["text"] = valid_job["hook"]["text"] + "   "
+    validate_job(valid_job)
+
+
+def test_word_count_mismatch_rejected(valid_job):
+    valid_job["script"]["wordCount"] += 5
+    expect_rejected(valid_job, "must match the narration word count")
+
+
+def test_word_count_missing_rejected(valid_job):
+    del valid_job["script"]["wordCount"]
+    expect_rejected(valid_job, "script.wordCount must be a non-negative integer")
+
+
+@pytest.mark.parametrize("value", ["84", True, -1, 8.5])
+def test_word_count_invalid_values_rejected(valid_job, value):
+    valid_job["script"]["wordCount"] = value
+    expect_rejected(valid_job, "script.wordCount must be a non-negative integer")
+
+
+def test_simple_diagram_requires_items(valid_job):
+    del valid_job["scenes"][1]["visual"]["items"]
+    expect_rejected(valid_job, "SimpleDiagram must include items")
+
+
+def test_animated_text_rejects_items(valid_job):
+    valid_job["scenes"][0]["visual"]["items"] = ["not allowed here"]
+    expect_rejected(valid_job, "AnimatedText must not include items")
+
+
+def test_duplicate_scene_citation_rejected(valid_job):
+    url = valid_job["research"]["sources"][0]["url"]
+    valid_job["scenes"][1]["sources"] = [url, url]
+    expect_rejected(valid_job, "must not repeat URLs")
+
+
+def test_non_string_scene_sources_rejected_without_crashing(valid_job):
+    valid_job["scenes"][1]["sources"] = [{"url": "https://example.com/x"}]
+    expect_rejected(valid_job, "must be an http(s) URL")
+
+
+@pytest.mark.parametrize("status", ["draft", "rendered", None])
+def test_invalid_status_rejected(valid_job, status):
+    valid_job["status"] = status
+    expect_rejected(valid_job, 'status must be "scripted"')
+
+
+def test_missing_status_rejected(valid_job):
+    del valid_job["status"]
+    expect_rejected(valid_job, 'status must be "scripted"')
+
+
+@pytest.mark.parametrize("hook_seconds", [1.0, 3.0])
+def test_hook_duration_boundary_values_pass(valid_job, hook_seconds):
+    delta = hook_seconds - valid_job["scenes"][0]["durationSeconds"]
+    valid_job["scenes"][0]["durationSeconds"] = hook_seconds
+    valid_job["scenes"][1]["durationSeconds"] -= delta
+    validate_job(valid_job)
+
+
+@pytest.mark.parametrize(
+    ("first", "rest"),
+    [(2.0, [10.4, 10.3, 10.3]), (12.0, [7.0, 7.0, 7.0])],
+)
+def test_body_duration_boundary_values_pass(valid_job, first, rest):
+    valid_job["scenes"][1]["durationSeconds"] = first
+    for scene, duration in zip(valid_job["scenes"][2:], rest):
+        scene["durationSeconds"] = duration
+    validate_job(valid_job)
+
+
+@pytest.mark.parametrize("value", [math.nan, math.inf, -1.0, 0.0])
+def test_scene_duration_invalid_numbers_rejected(valid_job, value):
+    valid_job["scenes"][1]["durationSeconds"] = value
+    expect_rejected(valid_job, "must be a positive number")
+
+
+@pytest.mark.parametrize("target", [10.0, 25.0, 35.0, 60.0])
+def test_valid_mock_jobs_pass_at_supported_durations(target):
+    summary = validate_job(make_job(target))
+    assert summary["sceneCount"] >= 3
+    assert abs(summary["durationSeconds"] - target) <= max(2.0, target * 0.08)

@@ -53,6 +53,7 @@ def validate_job(job: dict) -> dict:
             problems.append(message)
 
     check(job.get("schemaVersion") == 2, "schemaVersion must be 2.")
+    check(job.get("status") == "scripted", 'status must be "scripted".')
     check(_is_text(job.get("jobId")), "jobId must be a non-empty string.")
     check(_is_text(job.get("topic")), "topic must be a non-empty string.")
 
@@ -142,6 +143,17 @@ def validate_job(job: dict) -> dict:
         problems.append("script must be an object.")
     else:
         check(_is_text(script.get("narration")), "script.narration must be a non-empty string.")
+        word_count = script.get("wordCount")
+        check(
+            isinstance(word_count, int) and not isinstance(word_count, bool) and word_count >= 0,
+            "script.wordCount must be a non-negative integer.",
+        )
+        if _is_text(script.get("narration")) and isinstance(word_count, int) and not isinstance(word_count, bool):
+            check(
+                word_count == len(script["narration"].split()),
+                "script.wordCount must match the narration word count "
+                f"(declared {word_count}, found {len(script['narration'].split())}).",
+            )
         beats = script.get("beats")
         check(
             isinstance(beats, list) and len(beats) >= 2,
@@ -227,11 +239,24 @@ def validate_job(job: dict) -> dict:
                         and all(_is_text(item) for item in items),
                         f"{label}.visual.items must be 1-6 non-empty strings.",
                     )
+                component = visual.get("component")
+                if component == "SimpleDiagram":
+                    check(items is not None, f"{label}.visual: SimpleDiagram must include items.")
+                elif component == "AnimatedText":
+                    check(
+                        items is None,
+                        f"{label}.visual: AnimatedText must not include items; use subheadline instead.",
+                    )
 
             scene_sources = scene.get("sources")
             if not isinstance(scene_sources, list):
                 problems.append(f"{label}.sources must be a list.")
             else:
+                if all(isinstance(url, str) for url in scene_sources):
+                    check(
+                        len(set(scene_sources)) == len(scene_sources),
+                        f"{label}.sources must not repeat URLs.",
+                    )
                 for source_index, url in enumerate(scene_sources):
                     check(
                         _is_url(url),
@@ -248,6 +273,30 @@ def validate_job(job: dict) -> dict:
             abs(total_seconds - target_seconds) <= tolerance,
             f"Scene durations total {total_seconds:g}s; expected {target_seconds:g}s "
             f"({tolerance:g}s tolerance).",
+        )
+
+    declared_total = job.get("durationSeconds")
+    check(
+        _is_number(declared_total) and declared_total > 0,
+        "durationSeconds must be a positive number.",
+    )
+    if total_is_valid and _is_number(declared_total):
+        check(
+            abs(declared_total - total_seconds) <= 0.01,
+            f"durationSeconds ({declared_total:g}s) must equal the scene duration sum "
+            f"({total_seconds:g}s).",
+        )
+
+    if (
+        isinstance(hook, dict)
+        and _is_text(hook.get("text"))
+        and scenes
+        and isinstance(scenes[0], dict)
+        and _is_text(scenes[0].get("narration"))
+    ):
+        check(
+            scenes[0]["narration"].strip() == hook["text"].strip(),
+            "The first scene's narration must match hook.text exactly.",
         )
 
     if problems:
