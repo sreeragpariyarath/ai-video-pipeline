@@ -270,6 +270,10 @@ class SourceDiscovery:
         self._provider = provider
         self._config = config or DiscoveryConfig()
 
+    @property
+    def config(self) -> DiscoveryConfig:
+        return self._config
+
     def discover(self, plan: ResearchPlan) -> DiscoveryResult:
         config = self._config
         now = datetime.now(timezone.utc)

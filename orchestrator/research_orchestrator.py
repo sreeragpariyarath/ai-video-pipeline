@@ -3,11 +3,15 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
+from pydantic import BaseModel
+
 from .claim_synthesis import ClaimSynthesizer
 from .claim_verifier import ClaimVerifier
 from .discovery_schemas import DiscoveryResult
 from .evidence_extractor import EvidenceExtraction
 from .gemini import GeminiError
+from .quality import QualityEvaluator, resource_limits
+from .quality_schemas import QualityReport, ResourceUsage
 from .research_planner import ResearchPlanner
 from .research_schemas import (
     ClaimEvidence,
@@ -18,11 +22,17 @@ from .research_schemas import (
     StoryAngle,
 )
 from .source_discovery import SourceDiscovery
-from .verification_schemas import MAX_EVIDENCE, VerificationResult
+from .verification_schemas import MAX_CLAIMS, MAX_EVIDENCE, VerificationResult
 
 
 class ResearchError(RuntimeError):
     """A research stage could not produce meaningful output; message is sanitized."""
+
+
+class ResearchResult(BaseModel):
+    package: ResearchPackage
+    quality: QualityReport
+    usage: ResourceUsage
 
 
 class ResearchOrchestrator:
@@ -33,14 +43,16 @@ class ResearchOrchestrator:
         extraction: EvidenceExtraction,
         synthesizer: ClaimSynthesizer,
         verifier: ClaimVerifier,
+        evaluator: QualityEvaluator | None = None,
     ):
         self._planner = planner
         self._discovery = discovery
         self._extraction = extraction
         self._synthesizer = synthesizer
         self._verifier = verifier
+        self._evaluator = evaluator or QualityEvaluator()
 
-    def research(self, topic: str, *, target_seconds: float = 35.0) -> ResearchPackage:
+    def research(self, topic: str, *, target_seconds: float = 35.0) -> ResearchResult:
         try:
             plan = self._planner.plan(topic, target_seconds=target_seconds)
         except GeminiError as exc:
@@ -60,9 +72,28 @@ class ResearchOrchestrator:
             raise ResearchError(
                 "No evidence could be extracted from the discovered sources."
             )
-        claims = self._synthesizer.synthesize(plan.topic, plan.core_question, pool)
+        # The built-in synthesizers cap their own output, but the orchestrator
+        # enforces the run-wide ceiling so a custom component cannot blow it.
+        claims = self._synthesizer.synthesize(
+            plan.topic, plan.core_question, pool
+        )[:MAX_CLAIMS]
         verification = self._verifier.verify(claims, pool)
-        return self._assemble(plan, discovery, pool, claims, verification)
+        package = self._assemble(plan, discovery, pool, claims, verification)
+        usage = ResourceUsage(
+            queries_executed=discovery.queries_executed,
+            queries_failed=sum(q.status == "failed" for q in discovery.queries),
+            candidates_discovered=len(discovery.candidates),
+            sources_processed=extraction.sources_processed,
+            sources_failed=extraction.sources_failed,
+            evidence_items=len(pool),
+            claims_verified=len(claims),
+            limits=resource_limits(self._discovery.config, self._extraction.config),
+        )
+        return ResearchResult(
+            package=package,
+            quality=self._evaluator.evaluate(package),
+            usage=usage,
+        )
 
     def _assemble(
         self,

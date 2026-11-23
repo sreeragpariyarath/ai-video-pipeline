@@ -7,14 +7,21 @@ from orchestrator.claim_synthesis import ClaimSynthesizer, MockClaimSynthesizer,
 from orchestrator.claim_verifier import MockClaimVerifier, VerificationError
 from orchestrator.discovery_schemas import DiscoveryCandidate, DiscoveryResult
 from orchestrator.evidence_extractor import MockEvidenceExtraction
-from orchestrator.evidence_schemas import ExtractionResult, SourceExtraction
+from orchestrator.evidence_schemas import ExtractionConfig, ExtractionResult, SourceExtraction
 from orchestrator.gemini import GeminiClient, GeminiError
-from orchestrator.research_orchestrator import ResearchError, ResearchOrchestrator
+from orchestrator.quality import QualityEvaluator
+from orchestrator.quality_schemas import QualityConfig
+from orchestrator.research_orchestrator import (
+    ResearchError,
+    ResearchOrchestrator,
+    ResearchResult,
+)
 from orchestrator.research_planner import MockResearchPlanner
 from orchestrator.research_schemas import ClaimEvidence, ResearchClaim, ResearchPackage
 from orchestrator.search_provider import MockSearchProvider, SearchError, SearchProvider
-from orchestrator.source_discovery import SourceDiscovery
+from orchestrator.source_discovery import DiscoveryConfig, SourceDiscovery
 from orchestrator.verification_schemas import (
+    MAX_CLAIMS,
     MAX_EVIDENCE,
     ClaimVerification,
     EvidenceJudgment,
@@ -119,6 +126,7 @@ class FakeDiscovery:
     def __init__(self, result):
         self.result = result
         self.calls = []
+        self.config = DiscoveryConfig()
 
     def discover(self, plan):
         self.calls.append(plan)
@@ -129,6 +137,7 @@ class FakeExtraction:
     def __init__(self, result):
         self.result = result
         self.calls = []
+        self.config = ExtractionConfig()
 
     def extract(self, plan, discovery):
         self.calls.append((plan, discovery))
@@ -222,6 +231,8 @@ class Recording:
 
     def __getattr__(self, attr):
         target = getattr(self._inner, attr)
+        if not callable(target):
+            return target
 
         def wrapper(*args, **kwargs):
             result = target(*args, **kwargs)
@@ -232,7 +243,12 @@ class Recording:
 
 
 def make_orchestrator(
-    planner=None, discovery=None, extraction=None, synthesizer=None, verifier=None
+    planner=None,
+    discovery=None,
+    extraction=None,
+    synthesizer=None,
+    verifier=None,
+    evaluator=None,
 ):
     return ResearchOrchestrator(
         planner=planner or MockResearchPlanner(),
@@ -240,12 +256,13 @@ def make_orchestrator(
         extraction=extraction or MockEvidenceExtraction(),
         synthesizer=synthesizer or MockClaimSynthesizer(),
         verifier=verifier or MockClaimVerifier(),
+        evaluator=evaluator,
     )
 
 
 class TestEndToEnd:
     def test_mock_pipeline_produces_valid_package(self):
-        package = make_orchestrator().research(TOPIC)
+        package = make_orchestrator().research(TOPIC).package
         assert isinstance(package, ResearchPackage)
         assert package.topic == TOPIC
         assert package.claims
@@ -260,7 +277,7 @@ class TestEndToEnd:
         ]
 
     def test_claim_evidence_preserved(self):
-        package = make_orchestrator().research(TOPIC)
+        package = make_orchestrator().research(TOPIC).package
         source_ids = {s.source_id for s in package.sources}
         for claim in package.claims:
             assert claim.evidence
@@ -298,13 +315,13 @@ class TestEndToEnd:
         orchestrator = make_orchestrator(
             planner=Recording("planner", MockResearchPlanner(), log)
         )
-        package = orchestrator.research(TOPIC, target_seconds=20.0)
+        package = orchestrator.research(TOPIC, target_seconds=20.0).package
         assert log[0][3] == {"target_seconds": 20.0}
         assert package.topic == TOPIC
 
     def test_deterministic_with_mocks(self):
-        first = make_orchestrator().research(TOPIC)
-        second = make_orchestrator().research(TOPIC)
+        first = make_orchestrator().research(TOPIC).package
+        second = make_orchestrator().research(TOPIC).package
         assert first.claims == second.claims
         assert first.summary == second.summary
         assert first.research_questions == second.research_questions
@@ -332,7 +349,7 @@ class TestPartialFailures:
                 extraction=extraction,
                 synthesizer=synthesizer,
                 verifier=verifier,
-            ).research(TOPIC)
+            ).research(TOPIC).package
         assert extraction.calls == []
         assert synthesizer.calls == []
         assert verifier.calls == []
@@ -347,7 +364,7 @@ class TestPartialFailures:
             extraction=FakeExtraction(extraction),
             synthesizer=FakeSynthesizer(),
             verifier=FakeVerifier(),
-        ).research(TOPIC)
+        ).research(TOPIC).package
         assert [s.source_id for s in package.sources] == ["s1"]
         assert len(package.claims) == 1
 
@@ -360,7 +377,7 @@ class TestPartialFailures:
                 discovery=FakeDiscovery(discovery),
                 extraction=FakeExtraction(extraction),
                 synthesizer=synthesizer,
-            ).research(TOPIC)
+            ).research(TOPIC).package
         assert synthesizer.calls == []
 
     def test_ok_sources_without_evidence_fails_clearly(self):
@@ -370,7 +387,7 @@ class TestPartialFailures:
             make_orchestrator(
                 discovery=FakeDiscovery(discovery),
                 extraction=FakeExtraction(extraction),
-            ).research(TOPIC)
+            ).research(TOPIC).package
 
     def test_skipped_sources_excluded_from_package(self):
         discovery = make_discovery([make_candidate(1), make_candidate(2)])
@@ -382,14 +399,14 @@ class TestPartialFailures:
             extraction=FakeExtraction(extraction),
             synthesizer=FakeSynthesizer(),
             verifier=FakeVerifier(),
-        ).research(TOPIC)
+        ).research(TOPIC).package
         assert [s.source_id for s in package.sources] == ["s1"]
 
     def test_individual_query_failures_tolerated(self):
         provider = ScriptedProvider(fail_queries=[f"{TOPIC} pricing costs statistics"])
         package = make_orchestrator(
             discovery=SourceDiscovery(provider)
-        ).research(TOPIC)
+        ).research(TOPIC).package
         assert package.claims
         assert len(provider.calls) == 5
 
@@ -409,7 +426,7 @@ class TestPartialFailures:
                 extraction=FakeExtraction(extraction),
                 synthesizer=FakeSynthesizer(),
                 verifier=verifier,
-            ).research(TOPIC)
+            ).research(TOPIC).package
 
     def test_fatal_planning_failure_sanitized(self):
         secret = "SECRET-MODEL-OUTPUT-2k4j"
@@ -418,7 +435,7 @@ class TestPartialFailures:
             make_orchestrator(
                 planner=FakePlanner(error=GeminiError(f"bad output: {secret}")),
                 discovery=discovery,
-            ).research(TOPIC)
+            ).research(TOPIC).package
         assert str(excinfo.value) == "Research planning failed."
         assert secret not in str(excinfo.value)
         assert discovery.calls == []
@@ -444,7 +461,7 @@ class TestPartialFailures:
         with pytest.raises(SynthesisError, match="invalid claim synthesis output"):
             make_orchestrator(
                 synthesizer=ClaimSynthesizer(GeminiClient())
-            ).research(TOPIC)
+            ).research(TOPIC).package
 
 
 class TestAssembly:
@@ -459,7 +476,7 @@ class TestAssembly:
             extraction=FakeExtraction(extraction),
             synthesizer=FakeSynthesizer(),
             verifier=verifier,
-        ).research(TOPIC)
+        ).research(TOPIC).package
         assert [c.verification_status for c in package.claims] == [
             "contradicted",
             "unverified",
@@ -474,7 +491,7 @@ class TestAssembly:
             extraction=FakeExtraction(extraction),
             synthesizer=FakeSynthesizer(),
             verifier=FakeVerifier(),
-        ).research(TOPIC)
+        ).research(TOPIC).package
         assert package.sources[0].source_type == "unknown"
 
     def test_source_metadata_from_discovery(self):
@@ -486,7 +503,7 @@ class TestAssembly:
             extraction=FakeExtraction(extraction),
             synthesizer=FakeSynthesizer(),
             verifier=FakeVerifier(),
-        ).research(TOPIC)
+        ).research(TOPIC).package
         source = package.sources[0]
         assert source.url == candidate.canonical_url
         assert source.title == candidate.title
@@ -505,6 +522,106 @@ class TestAssembly:
             extraction=FakeExtraction(extraction),
             synthesizer=synthesizer,
             verifier=verifier,
-        ).research(TOPIC)
+        ).research(TOPIC).package
         assert len(synthesizer.calls[0][2]) == MAX_EVIDENCE
         assert len(verifier.calls[0][1]) == MAX_EVIDENCE
+
+    def test_claims_capped_at_run_limit(self):
+        discovery = make_discovery([make_candidate(1)])
+        evidence = [make_evidence("s1", i) for i in range(MAX_EVIDENCE)]
+        extraction = make_extraction_result([ok_source("s1", evidence)])
+        verifier = FakeVerifier()
+        result = make_orchestrator(
+            discovery=FakeDiscovery(discovery),
+            extraction=FakeExtraction(extraction),
+            synthesizer=FakeSynthesizer(),
+            verifier=verifier,
+        ).research(TOPIC)
+        assert len(result.package.claims) == MAX_CLAIMS
+        assert len(verifier.calls[0][0]) == MAX_CLAIMS
+        assert result.usage.claims_verified == MAX_CLAIMS
+        assert result.usage.limits.max_claims == MAX_CLAIMS
+
+
+class TestQualityAndUsageIntegration:
+    def test_result_contains_package_quality_and_usage(self):
+        result = make_orchestrator().research(TOPIC)
+        assert isinstance(result, ResearchResult)
+        assert isinstance(result.package, ResearchPackage)
+        assert result.quality.status == "ready"
+        assert result.quality.warnings == []
+        assert result.usage.queries_executed == 5
+        assert result.usage.queries_failed == 0
+        assert result.usage.sources_processed == 9
+        assert result.usage.sources_failed == 0
+        assert result.usage.evidence_items == 8
+        assert result.usage.claims_verified == 8
+        assert result.usage.limits.max_search_queries == 10
+        assert result.usage.limits.max_sources_fetched == 8
+        assert result.usage.limits.max_gemini_calls == 11
+        assert result.usage.limits.max_claims == 24
+        assert result.usage.limits.max_evidence_items == 60
+
+    def test_usage_counts_match_discovery(self):
+        plan = MockResearchPlanner().plan(TOPIC)
+        expected = SourceDiscovery(MockSearchProvider()).discover(plan)
+        result = make_orchestrator().research(TOPIC)
+        assert result.usage.candidates_discovered == len(expected.candidates)
+        assert result.usage.queries_executed == expected.queries_executed
+
+    def test_failed_queries_counted(self):
+        provider = ScriptedProvider(fail_queries=[f"{TOPIC} pricing costs statistics"])
+        result = make_orchestrator(discovery=SourceDiscovery(provider)).research(TOPIC)
+        assert result.usage.queries_executed == 5
+        assert result.usage.queries_failed == 1
+
+    def test_failed_sources_counted(self):
+        discovery = make_discovery([make_candidate(1), make_candidate(2)])
+        extraction = make_extraction_result(
+            [ok_source("s1", [make_evidence("s1")]), failed_source("s2")]
+        )
+        result = make_orchestrator(
+            discovery=FakeDiscovery(discovery),
+            extraction=FakeExtraction(extraction),
+            synthesizer=FakeSynthesizer(),
+            verifier=FakeVerifier(),
+        ).research(TOPIC)
+        assert result.usage.sources_processed == 2
+        assert result.usage.sources_failed == 1
+        assert result.usage.evidence_items == 1
+        assert result.usage.claims_verified == 1
+
+    def test_custom_evaluator_config_applied(self):
+        result = make_orchestrator(
+            evaluator=QualityEvaluator(QualityConfig(min_sources=50))
+        ).research(TOPIC)
+        assert result.quality.status == "needs_review"
+        assert any(w.code == "few_sources" for w in result.quality.warnings)
+
+    def test_custom_component_configs_reflected_in_limits(self):
+        discovery = SourceDiscovery(
+            MockSearchProvider(), DiscoveryConfig(max_queries=3, max_candidates=5)
+        )
+        extraction = MockEvidenceExtraction(ExtractionConfig(max_sources=2))
+        result = make_orchestrator(
+            discovery=discovery, extraction=extraction
+        ).research(TOPIC)
+        limits = result.usage.limits
+        assert limits.max_search_queries == 3
+        assert limits.max_candidates == 5
+        assert limits.max_sources_fetched == 2
+        assert limits.max_gemini_calls == 5
+        assert result.usage.queries_executed <= 3
+        assert result.usage.sources_processed <= 5
+
+    def test_quality_evaluation_does_not_mutate_package(self):
+        result = make_orchestrator().research(TOPIC)
+        snapshot = result.package.model_dump()
+        QualityEvaluator().evaluate(result.package)
+        assert result.package.model_dump() == snapshot
+
+    def test_deterministic_quality_and_usage(self):
+        first = make_orchestrator().research(TOPIC)
+        second = make_orchestrator().research(TOPIC)
+        assert first.quality == second.quality
+        assert first.usage == second.usage

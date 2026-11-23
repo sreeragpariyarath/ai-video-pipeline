@@ -41,6 +41,10 @@ class EvidenceExtraction:
         self._client = client
         self._config = config or ExtractionConfig()
 
+    @property
+    def config(self) -> ExtractionConfig:
+        return self._config
+
     def extract(self, plan: ResearchPlan, discovery: DiscoveryResult) -> ExtractionResult:
         if plan.topic != discovery.topic:
             raise ValueError("Discovery result topic does not match the research plan.")
@@ -153,6 +157,10 @@ class MockEvidenceExtraction:
 
     def __init__(self, config: ExtractionConfig | None = None):
         self._config = config or ExtractionConfig()
+
+    @property
+    def config(self) -> ExtractionConfig:
+        return self._config
 
     def extract(self, plan: ResearchPlan, discovery: DiscoveryResult) -> ExtractionResult:
         if plan.topic != discovery.topic:

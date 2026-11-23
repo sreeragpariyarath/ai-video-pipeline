@@ -22,8 +22,8 @@ from .research_schemas import (
 )
 
 
-PositiveInt = Annotated[int, BeforeValidator(_reject_bool)]
-NonNegativeInt = Annotated[int, BeforeValidator(_reject_bool)]
+PositiveInt = Annotated[int, Field(ge=1), BeforeValidator(_reject_bool)]
+NonNegativeInt = Annotated[int, Field(ge=0), BeforeValidator(_reject_bool)]
 ExcerptStr = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=20, max_length=600)
 ]
