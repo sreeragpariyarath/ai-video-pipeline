@@ -9,7 +9,7 @@ from .schemas import (
     Hook,
     ResearchBundle,
     ResearchSummary,
-    ScenePlan,
+    LegacyScenePlan,
     Script,
     Source,
 )
@@ -73,13 +73,13 @@ class GeminiEngine:
         hook: Hook,
         script: Script,
         target_seconds: float,
-    ) -> ScenePlan:
+    ) -> LegacyScenePlan:
         return self._client.generate_json(
             system=prompts.BREAKDOWN_SYSTEM,
             prompt=prompts.breakdown_prompt(
                 topic, research, hook, script, target_seconds
             ),
-            schema=ScenePlan,
+            schema=LegacyScenePlan,
             temperature=0.3,
         )
 
@@ -266,5 +266,7 @@ class MockEngine:
         hook: Hook,
         script: Script,
         target_seconds: float,
-    ) -> ScenePlan:
-        return ScenePlan.model_validate({"scenes": _mock_scenes(topic, target_seconds)})
+    ) -> LegacyScenePlan:
+        return LegacyScenePlan.model_validate(
+            {"scenes": _mock_scenes(topic, target_seconds)}
+        )

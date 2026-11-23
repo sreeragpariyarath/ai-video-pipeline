@@ -12,7 +12,7 @@ from pathlib import Path
 
 from .engine import GeminiEngine, MockEngine
 from .gemini import DEFAULT_MODEL, GeminiClient, GeminiError
-from .schemas import Hook, ResearchBundle, ScenePlan, Script
+from .schemas import Hook, LegacyScenePlan, ResearchBundle, Script
 from .validation import validate_job
 
 
@@ -32,7 +32,7 @@ def build_job(
     research: ResearchBundle,
     hook: Hook,
     script: Script,
-    plan: ScenePlan,
+    plan: LegacyScenePlan,
     *,
     provider: str,
     model: str,

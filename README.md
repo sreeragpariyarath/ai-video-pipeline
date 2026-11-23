@@ -1,102 +1,67 @@
-# AI Video Factory - MVP
+# AI Video Factory
 
-Topic -> research -> hook -> script -> scene plan -> validated job JSON.
+AI Video Factory creates typed, inspectable artifacts for a short-form explainer video and can render a silent MP4 from the scene plan.
 
-The Remotion renderer is still a placeholder and does not consume the job JSON yet.
+## Component flow
 
-## Pipeline
+```text
+ResearchPlanner → SourceDiscovery → EvidenceExtraction
+→ ClaimSynthesizer → ClaimVerifier → QualityEvaluator
+→ ScriptGenerator → ScenePlanner → ScenePlan validation → Remotion
+```
 
-1. **Research & fact collection** - Gemini with Google Search grounding. Source URLs come from the grounding metadata, then the notes are converted into a structured summary and fact sheet.
-2. **Hook generation** - one 1-3 second hook plus two alternatives.
-3. **Script writing** - narration sized to the target duration (about 2.4 spoken words per second), limited to the researched facts.
-4. **Scene breakdown** - the AI chooses the number of scenes and their durations so they add up to the target, and assigns a visual and per-scene sources.
-5. **JSON validation** - schema, scene count, hook/scene duration limits, total-duration tolerance, and source integrity. Invalid jobs are not saved.
-6. **Save job** - writes `output/jobs/latest.json`.
+Each stage has a distinct component and schema. `ProductionPipeline` coordinates the research, script, and scene components through injectable interfaces. The CLI saves `research.json`, `quality.json`, `usage.json`, `script.json`, `scene_plan.json`, and renderer props in a unique output folder.
+
+The original `orchestrator.pipeline` API remains for compatibility with the first MVP job format. New runs should use `orchestrator.production_pipeline` and the renderer-facing `ScenePlan`.
 
 ## Requirements
 
 - Python 3.10+
-- A Gemini API key (free tier works; the default model is `gemini-2.5-flash`)
-- Node.js 20+ and FFmpeg only for the renderer
+- Node.js 20+ and npm
+- `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) and `TAVILY_API_KEY` for live runs
+- Remotion's packaged video tooling for MP4 output; availability is confirmed by the actual render
 
-## Setup
+Install Python dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Set the API key:
-
-```bash
-# macOS / Linux
-export GEMINI_API_KEY="your-key"
-
-# Windows PowerShell
-$env:GEMINI_API_KEY = "your-key"
-```
-
-`GOOGLE_API_KEY` is accepted as a fallback, and `GEMINI_MODEL` overrides the default model. Model and Google Search grounding usage follow your Gemini API quota and pricing.
-
-## Generate a job
-
-```bash
-python -m orchestrator.pipeline "Why is Netflix cheaper than cable TV?"
-```
-
-Offline smoke test with no API key and placeholder data:
-
-```bash
-python -m orchestrator.pipeline --mock "Why is Netflix cheaper than cable TV?"
-```
-
-Options: `--model`, `--target-seconds` (default 35), `--out` (default `output/jobs/latest.json`). Use `--help` for details.
-
-## Validation rules
-
-- 3-10 scenes; the first scene is the hook (1-3s); every other scene is 2-12s.
-- Scene durations must total the target within `max(2s, 8%)`.
-- Research needs at least 3 facts, each citing one of the grounded source URLs.
-- Scene citations must come from the research sources.
-- Visual components are limited to `AnimatedText` and `SimpleDiagram`.
-- A failed validation exits with an error and does not write the job.
-
-## Job shape
-
-```json
-{
-  "schemaVersion": 2,
-  "jobId": "why-is-netflix-cheaper-than-cable-tv-20261120093358",
-  "topic": "Why is Netflix cheaper than cable TV?",
-  "status": "scripted",
-  "format": { "width": 1080, "height": 1920, "fps": 30, "targetDurationSeconds": 35.0 },
-  "generation": { "provider": "google", "model": "gemini-2.5-flash", "mode": "live" },
-  "research": {
-    "summary": "...",
-    "facts": [{ "claim": "...", "source": "https://..." }],
-    "sources": [{ "title": "...", "url": "https://..." }]
-  },
-  "hook": { "text": "...", "alternatives": ["...", "..."] },
-  "script": { "narration": "...", "beats": ["..."], "wordCount": 84 },
-  "scenes": [
-    {
-      "id": "scene-01",
-      "type": "hook",
-      "durationSeconds": 2.0,
-      "narration": "...",
-      "visual": { "component": "AnimatedText", "headline": "..." },
-      "sources": []
-    }
-  ],
-  "durationSeconds": 35.0
-}
-```
-
-## Renderer
+Install renderer dependencies:
 
 ```bash
 cd renderer
 npm install
-npm run render
+cd ..
 ```
 
-The current composition renders a placeholder scene. Connecting the job JSON to Remotion scene components is the next milestone.
+Live provider keys are read from environment variables. PowerShell example:
+
+```powershell
+$env:GEMINI_API_KEY = "your-key"
+$env:TAVILY_API_KEY = "your-key"
+```
+
+## Generate and render
+
+Generate validated artifacts without rendering:
+
+```bash
+python -m orchestrator.production_pipeline "Why is Netflix cheaper than cable TV?"
+```
+
+Render the scene plan to a silent MP4:
+
+```bash
+python -m orchestrator.production_pipeline --render "Why is Netflix cheaper than cable TV?"
+```
+
+Offline deterministic pipeline run (mock research content is illustrative, not factual):
+
+```bash
+python -m orchestrator.production_pipeline --mock --render "Why is Netflix cheaper than cable TV?"
+```
+
+Options include `--format short|mid_form|long_form`, `--target-seconds`, `--model`, and `--output-root`. Each run creates a new directory under `output/production` by default and never overwrites a prior run.
+
+The renderer supports controlled title/text, statistic, comparison, process, diagram, timeline, illustration-placeholder, and conclusion scenes with timed overlays, deterministic motion, and portrait/landscape output. See [Phase 5 in the project plan](docs/PLAN.md#8-phase-5--remotion-renderer) for the supported visual vocabulary and limitations. To render the synthetic showcase locally, run `cd renderer`, `npm install`, and `npm run render:sample`; this writes `renderer/sample-output.mp4`. Phase 5 does not add voice/audio, sourced/licensed artwork, or automated render QC.

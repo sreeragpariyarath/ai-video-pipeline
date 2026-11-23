@@ -42,7 +42,7 @@ class VisualSpec(BaseModel):
     items: list[str] | None = None
 
 
-class SceneSpec(BaseModel):
+class LegacySceneSpec(BaseModel):
     type: SceneType
     durationSeconds: float
     narration: str
@@ -50,8 +50,16 @@ class SceneSpec(BaseModel):
     sources: list[str] = Field(default_factory=list)
 
 
-class ScenePlan(BaseModel):
-    scenes: list[SceneSpec]
+class LegacyScenePlan(BaseModel):
+    """Scene shape consumed by the original JSON-job MVP pipeline."""
+
+    scenes: list[LegacySceneSpec]
+
+
+# Compatibility aliases for existing callers. New scene-planning work should
+# use orchestrator.scene_schemas.Scene and ScenePlan instead.
+SceneSpec = LegacySceneSpec
+ScenePlan = LegacyScenePlan
 
 
 @dataclass(frozen=True)

@@ -3,17 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "render": "remotion render src/index.ts Main output/placeholder.mp4"
+    "render": "remotion render src/index.ts",
+    "render:sample": "remotion render src/index.ts Main sample-output.mp4 --props=sample-plan.json",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@remotion/bundler": "^4.0.0",
     "@remotion/cli": "^4.0.0",
     "@remotion/renderer": "^4.0.0",
-    "@remotion/bundler": "^4.0.0",
-    "remotion": "^4.0.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "remotion": "^4.0.0"
   },
   "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "typescript": "^5.7.0"
   }
 }

@@ -7,5 +7,7 @@ __pycache__/
 .vscode/
 .env
 output/jobs/
+output/production/
 output/videos/*.mp4
+renderer/sample-output.mp4
 .DS_Store

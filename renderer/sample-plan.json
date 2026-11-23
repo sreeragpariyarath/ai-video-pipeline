@@ -1,0 +1,445 @@
+{
+  "plan": {
+    "scene_plan_id": "renderer-phase5-showcase",
+    "script_id": "renderer-showcase-script",
+    "research_id": "renderer-showcase-research",
+    "format": "short",
+    "target_seconds": 13.5,
+    "planned_seconds": 13.5,
+    "scenes": [
+      {
+        "scene_id": "sample-scene-01",
+        "order": 1,
+        "scene_type": "title",
+        "duration_seconds": 1.5,
+        "script_segment_ids": [
+          "sample-segment-01"
+        ],
+        "narration_text": "The hidden mechanism A simple question opens the story.",
+        "visual_description": "Synthetic renderer preview for title; not factual content.",
+        "composition": {
+          "layout": "centered",
+          "alignment": "center",
+          "hierarchy": "text_first",
+          "viewport": "push_in"
+        },
+        "motion": {
+          "entrance": "slide_up",
+          "exit": "fade",
+          "emphasis": "underline"
+        },
+        "on_screen_text": [
+          {
+            "text": "The hidden mechanism",
+            "role": "title",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "A simple question opens the story.",
+            "role": "subtitle",
+            "start_seconds": null,
+            "duration_seconds": null
+          }
+        ],
+        "transition": {
+          "type": "fade",
+          "duration_seconds": 0.2
+        }
+      },
+      {
+        "scene_id": "sample-scene-02",
+        "order": 2,
+        "scene_type": "text_focus",
+        "duration_seconds": 1.5,
+        "script_segment_ids": [
+          "sample-segment-02"
+        ],
+        "narration_text": "Look beneath the surface The visible result hides a deeper pattern.",
+        "visual_description": "Synthetic renderer preview for text_focus; not factual content.",
+        "composition": {
+          "layout": "centered",
+          "alignment": "center",
+          "hierarchy": "text_first",
+          "viewport": "pan_left"
+        },
+        "motion": {
+          "entrance": "scale",
+          "exit": "slide_down",
+          "emphasis": "pulse"
+        },
+        "on_screen_text": [
+          {
+            "text": "Look beneath the surface",
+            "role": "title",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "The visible result hides a deeper pattern.",
+            "role": "subtitle",
+            "start_seconds": null,
+            "duration_seconds": null
+          }
+        ],
+        "transition": {
+          "type": "slide",
+          "duration_seconds": 0.2
+        }
+      },
+      {
+        "scene_id": "sample-scene-03",
+        "order": 3,
+        "scene_type": "statistic",
+        "duration_seconds": 1.5,
+        "script_segment_ids": [
+          "sample-segment-03"
+        ],
+        "narration_text": "A number changes the story 12 A number changes the story.",
+        "visual_description": "Synthetic renderer preview for statistic; not factual content.",
+        "composition": {
+          "layout": "centered",
+          "alignment": "center",
+          "hierarchy": "text_first",
+          "viewport": "pull_out"
+        },
+        "motion": {
+          "entrance": "slide_left",
+          "exit": "none",
+          "emphasis": "scale"
+        },
+        "on_screen_text": [
+          {
+            "text": "A number changes the story",
+            "role": "title",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "12",
+            "role": "emphasis",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "A number changes the story.",
+            "role": "subtitle",
+            "start_seconds": null,
+            "duration_seconds": null
+          }
+        ],
+        "transition": {
+          "type": "cut",
+          "duration_seconds": 0.0
+        }
+      },
+      {
+        "scene_id": "sample-scene-04",
+        "order": 4,
+        "scene_type": "comparison",
+        "duration_seconds": 1.5,
+        "script_segment_ids": [
+          "sample-segment-04"
+        ],
+        "narration_text": "Two paths, one decision Option A Option B Both lead to a trade-off.",
+        "visual_description": "Synthetic renderer preview for comparison; not factual content.",
+        "composition": {
+          "layout": "split",
+          "alignment": "center",
+          "hierarchy": "visual_first",
+          "viewport": "static"
+        },
+        "motion": {
+          "entrance": "fade",
+          "exit": "none",
+          "emphasis": "none"
+        },
+        "on_screen_text": [
+          {
+            "text": "Two paths, one decision",
+            "role": "title",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "Option A",
+            "role": "label",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "Option B",
+            "role": "label",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "Both lead to a trade-off.",
+            "role": "label",
+            "start_seconds": null,
+            "duration_seconds": null
+          }
+        ],
+        "transition": {
+          "type": "fade",
+          "duration_seconds": 0.2
+        }
+      },
+      {
+        "scene_id": "sample-scene-05",
+        "order": 5,
+        "scene_type": "process",
+        "duration_seconds": 1.5,
+        "script_segment_ids": [
+          "sample-segment-05"
+        ],
+        "narration_text": "Follow the chain Input Mechanism Outcome Each step changes the next.",
+        "visual_description": "Synthetic renderer preview for process; not factual content.",
+        "composition": {
+          "layout": "stacked",
+          "alignment": "center",
+          "hierarchy": "visual_first",
+          "viewport": "push_in"
+        },
+        "motion": {
+          "entrance": "slide_up",
+          "exit": "fade",
+          "emphasis": "underline"
+        },
+        "on_screen_text": [
+          {
+            "text": "Follow the chain",
+            "role": "title",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "Input",
+            "role": "label",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "Mechanism",
+            "role": "label",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "Outcome",
+            "role": "label",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "Each step changes the next.",
+            "role": "label",
+            "start_seconds": null,
+            "duration_seconds": null
+          }
+        ],
+        "transition": {
+          "type": "slide",
+          "duration_seconds": 0.2
+        }
+      },
+      {
+        "scene_id": "sample-scene-06",
+        "order": 6,
+        "scene_type": "diagram",
+        "duration_seconds": 1.5,
+        "script_segment_ids": [
+          "sample-segment-06"
+        ],
+        "narration_text": "A connected system Signal System Response The nodes work together.",
+        "visual_description": "Synthetic renderer preview for diagram; not factual content.",
+        "composition": {
+          "layout": "grid",
+          "alignment": "center",
+          "hierarchy": "visual_first",
+          "viewport": "pan_left"
+        },
+        "motion": {
+          "entrance": "scale",
+          "exit": "slide_down",
+          "emphasis": "pulse"
+        },
+        "on_screen_text": [
+          {
+            "text": "A connected system",
+            "role": "title",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "Signal",
+            "role": "label",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "System",
+            "role": "label",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "Response",
+            "role": "label",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "The nodes work together.",
+            "role": "label",
+            "start_seconds": null,
+            "duration_seconds": null
+          }
+        ],
+        "transition": {
+          "type": "cut",
+          "duration_seconds": 0.0
+        }
+      },
+      {
+        "scene_id": "sample-scene-07",
+        "order": 7,
+        "scene_type": "timeline",
+        "duration_seconds": 1.5,
+        "script_segment_ids": [
+          "sample-segment-07"
+        ],
+        "narration_text": "How the story unfolds First Then Finally The order changes the result.",
+        "visual_description": "Synthetic renderer preview for timeline; not factual content.",
+        "composition": {
+          "layout": "centered",
+          "alignment": "center",
+          "hierarchy": "visual_first",
+          "viewport": "pull_out"
+        },
+        "motion": {
+          "entrance": "slide_left",
+          "exit": "none",
+          "emphasis": "scale"
+        },
+        "on_screen_text": [
+          {
+            "text": "How the story unfolds",
+            "role": "title",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "First",
+            "role": "label",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "Then",
+            "role": "label",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "Finally",
+            "role": "label",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "The order changes the result.",
+            "role": "label",
+            "start_seconds": null,
+            "duration_seconds": null
+          }
+        ],
+        "transition": {
+          "type": "fade",
+          "duration_seconds": 0.2
+        }
+      },
+      {
+        "scene_id": "sample-scene-08",
+        "order": 8,
+        "scene_type": "illustration",
+        "duration_seconds": 1.5,
+        "script_segment_ids": [
+          "sample-segment-08"
+        ],
+        "narration_text": "A system in motion A geometric illustration placeholder.",
+        "visual_description": "Synthetic renderer preview for illustration; not factual content.",
+        "composition": {
+          "layout": "full_bleed",
+          "alignment": "center",
+          "hierarchy": "text_first",
+          "viewport": "static"
+        },
+        "motion": {
+          "entrance": "fade",
+          "exit": "none",
+          "emphasis": "none"
+        },
+        "on_screen_text": [
+          {
+            "text": "A system in motion",
+            "role": "title",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "A geometric illustration placeholder.",
+            "role": "subtitle",
+            "start_seconds": null,
+            "duration_seconds": null
+          }
+        ],
+        "transition": {
+          "type": "slide",
+          "duration_seconds": 0.2
+        }
+      },
+      {
+        "scene_id": "sample-scene-09",
+        "order": 9,
+        "scene_type": "conclusion",
+        "duration_seconds": 1.5,
+        "script_segment_ids": [
+          "sample-segment-09"
+        ],
+        "narration_text": "Now you can see the pattern The takeaway is easier to spot.",
+        "visual_description": "Synthetic renderer preview for conclusion; not factual content.",
+        "composition": {
+          "layout": "centered",
+          "alignment": "center",
+          "hierarchy": "text_first",
+          "viewport": "push_in"
+        },
+        "motion": {
+          "entrance": "slide_up",
+          "exit": "fade",
+          "emphasis": "underline"
+        },
+        "on_screen_text": [
+          {
+            "text": "Now you can see the pattern",
+            "role": "title",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "The takeaway is easier to spot.",
+            "role": "subtitle",
+            "start_seconds": null,
+            "duration_seconds": null
+          }
+        ],
+        "transition": {
+          "type": "cut",
+          "duration_seconds": 0.0
+        }
+      }
+    ],
+    "created_at": "2026-11-23T00:00:00Z"
+  }
+}
