@@ -1,6 +1,9 @@
 import React from 'react';
-import { interpolate } from 'remotion';
 import type { Scene } from './sceneTypes';
+import { motionStyle, staggerDelayFrames } from './graphics/motion';
+import { SceneGraphicView } from './graphics/SceneGraphicView';
+import type { CompositionPreset } from './graphics/CompositionPresets';
+import { isGroupedPreset } from './graphics/CompositionPresets';
 
 const colors = {
   panel: 'rgba(22, 31, 49, 0.88)',
@@ -29,39 +32,64 @@ const secondaryText = (scene: Scene) => {
 };
 
 const revealStyle = (frame: number, index: number, fps: number) => {
-  const start = index * Math.max(1, Math.round(0.12 * fps));
-  const opacity = interpolate(frame, [start, start + Math.max(1, Math.round(0.22 * fps))], [0, 1], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
+  return motionStyle('rise', frame, fps, {
+    durationFrames: Math.round(0.34 * fps),
+    delayFrames: staggerDelayFrames(index, fps),
+    distance: 22,
   });
-  const y = interpolate(frame, [start, start + Math.max(1, Math.round(0.22 * fps))], [18, 0], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
-  return { opacity, transform: `translateY(${y}px)` };
 };
 
-export const SceneBlocks: React.FC<{ scene: Scene; frame: number; fps: number }> = ({
+export const SceneBlocks: React.FC<{ scene: Scene; frame: number; fps: number; preset: Exclude<CompositionPreset, 'auto'> }> = ({
   scene,
   frame,
   fps,
+  preset,
 }) => {
+  if (scene.graphic) {
+    return <SceneGraphicView graphic={scene.graphic} frame={frame} fps={fps} />;
+  }
   const items = secondaryText(scene)
     .filter(({ index }) => isVisible(scene, index, frame, fps))
     .slice(0, 4);
-  const isProcess = scene.scene_type === 'process' || scene.scene_type === 'timeline';
-  const isTimeline = scene.scene_type === 'timeline';
-  const isDiagram = scene.scene_type === 'diagram';
-  const isStatistic = scene.scene_type === 'statistic';
+  const isProcess = scene.scene_type === 'process' || scene.scene_type === 'timeline' || preset === 'process_walkthrough' || preset === 'timeline';
+  const isTimeline = scene.scene_type === 'timeline' || preset === 'timeline';
+  const isDiagram = scene.scene_type === 'diagram' || preset === 'diagram';
+  const isStatistic = scene.scene_type === 'statistic' || preset === 'number_explainer';
+  const isQuote = preset === 'quote_callout';
   const isCardLayout =
     scene.scene_type === 'comparison' ||
+    preset === 'comparison_two' ||
+    preset === 'comparison_three' ||
     scene.composition.layout === 'split' ||
     scene.composition.layout === 'grid';
   const isStackedLayout = scene.composition.layout === 'stacked';
   if (
     !items.length ||
-    (!isProcess && !isDiagram && !isStatistic && !isCardLayout && !isStackedLayout)
+    (!isProcess && !isDiagram && !isStatistic && !isCardLayout && !isStackedLayout && !isQuote)
   ) return null;
+
+  if (isQuote) {
+    return (
+      <div
+        style={{
+          maxWidth: 980,
+          margin: '0 auto 30px',
+          padding: '28px 38px 34px',
+          borderLeft: `5px solid ${colors.accent}`,
+          borderRadius: '0 22px 22px 0',
+          background: 'linear-gradient(110deg, rgba(120,224,194,.12), rgba(22,31,49,.84))',
+          boxShadow: '0 18px 56px rgba(0,0,0,.24)',
+        }}
+      >
+        <div style={{ color: colors.accent, fontSize: 62, fontWeight: 800, lineHeight: .7, marginBottom: 18 }}>“</div>
+        {items.slice(0, 2).map(({ item, index }) => (
+          <div key={`${item.text}-${index}`} style={{ color: '#f6f7fb', fontSize: 30, lineHeight: 1.3, ...revealStyle(frame, index, fps) }}>
+            {item.text}
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   if (isStatistic) {
     const emphasis = items.find(({ item }) => item.role === 'emphasis') ?? items[0];
@@ -198,12 +226,15 @@ export const SceneBlocks: React.FC<{ scene: Scene; frame: number; fps: number }>
   }
 
   if (isCardLayout) {
-    const cards = scene.scene_type === 'comparison' ? items.slice(0, 2) : items;
+    const columnCount = preset === 'comparison_three' ? 3 : 2;
+    const cards = scene.scene_type === 'comparison' || preset === 'comparison_two' || preset === 'comparison_three'
+      ? items.slice(0, columnCount)
+      : items;
     return (
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: `repeat(${cards.length > 1 ? 2 : 1}, minmax(0, 1fr))`,
+          gridTemplateColumns: `repeat(${Math.min(columnCount, cards.length)}, minmax(0, 1fr))`,
           gap: 18,
           marginBottom: 38,
         }}
@@ -254,15 +285,16 @@ export const SceneBlocks: React.FC<{ scene: Scene; frame: number; fps: number }>
   );
 };
 
-export const SceneDetails: React.FC<{ scene: Scene; frame: number; fps: number }> = ({
+export const SceneDetails: React.FC<{ scene: Scene; frame: number; fps: number; preset: Exclude<CompositionPreset, 'auto'> }> = ({
   scene,
   frame,
   fps,
+  preset,
 }) => {
   const isGrouped =
-    scene.scene_type === 'process' ||
-    scene.scene_type === 'timeline' ||
     scene.scene_type === 'comparison' ||
+    isGroupedPreset(preset) ||
+    preset === 'quote_callout' ||
     ['split', 'grid', 'stacked'].includes(scene.composition.layout);
   if (isGrouped) return null;
 

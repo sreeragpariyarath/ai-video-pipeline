@@ -30,14 +30,15 @@ export type Scene = {
   narration_text: string;
   visual_description: string;
   composition: {
+    preset?: 'auto' | 'headline' | 'number_explainer' | 'comparison_two' | 'comparison_three' | 'timeline' | 'process_walkthrough' | 'quote_callout' | 'diagram' | 'split_visual' | 'hero_overlay';
     layout: 'centered' | 'split' | 'stacked' | 'full_bleed' | 'grid';
     alignment: 'start' | 'center' | 'end';
     hierarchy: 'text_first' | 'visual_first' | 'balanced';
     viewport: 'static' | 'push_in' | 'pull_out' | 'pan_left' | 'pan_right';
   };
   motion: {
-    entrance: 'none' | 'fade' | 'slide_up' | 'slide_down' | 'slide_left' | 'slide_right' | 'scale';
-    exit: 'none' | 'fade' | 'slide_up' | 'slide_down' | 'slide_left' | 'slide_right' | 'scale';
+    entrance: 'none' | 'fade' | 'slide_up' | 'slide_down' | 'slide_left' | 'slide_right' | 'scale' | 'pop' | 'blur_reveal';
+    exit: 'none' | 'fade' | 'slide_up' | 'slide_down' | 'slide_left' | 'slide_right' | 'scale' | 'pop' | 'blur_reveal';
     emphasis: 'none' | 'pulse' | 'scale' | 'underline';
   };
   on_screen_text: Array<{
@@ -46,7 +47,16 @@ export type Scene = {
     start_seconds: number | null;
     duration_seconds: number | null;
   }>;
+  graphic?: SceneGraphic | null;
   transition: { type: 'cut' | 'fade' | 'slide'; duration_seconds: number };
+};
+
+export type GraphicDatum = { label: string; value_text: string };
+export type SceneGraphic = {
+  kind: 'bar_chart' | 'line_graph' | 'progress_bar' | 'percentage_ring' | 'number_counter';
+  title: string;
+  source_excerpt: string;
+  data: GraphicDatum[];
 };
 
 export type VideoProps = { plan: ScenePlan };
@@ -169,13 +179,20 @@ const validateSceneCapabilities = (scene: Scene): void => {
   const alignments = ['start', 'center', 'end'] as const;
   const hierarchies = ['text_first', 'visual_first', 'balanced'] as const;
   const viewports = ['static', 'push_in', 'pull_out', 'pan_left', 'pan_right'] as const;
-  const motions = ['none', 'fade', 'slide_up', 'slide_down', 'slide_left', 'slide_right', 'scale'] as const;
+  const motions = ['none', 'fade', 'slide_up', 'slide_down', 'slide_left', 'slide_right', 'scale', 'pop', 'blur_reveal'] as const;
   const emphasis = ['none', 'pulse', 'scale', 'underline'] as const;
   const transitions = ['cut', 'fade', 'slide'] as const;
   const roles = ['title', 'subtitle', 'label', 'emphasis', 'caption'] as const;
 
   if (!scene.composition || !contains(layouts, scene.composition.layout)) {
     throw new Error(`Scene ${scene.scene_id} has an unsupported layout.`);
+  }
+  const compositionPresets = [
+    'auto', 'headline', 'number_explainer', 'comparison_two', 'comparison_three',
+    'timeline', 'process_walkthrough', 'quote_callout', 'diagram', 'split_visual', 'hero_overlay',
+  ] as const;
+  if (scene.composition.preset !== undefined && !contains(compositionPresets, scene.composition.preset)) {
+    throw new Error(`Scene ${scene.scene_id} has an unsupported composition preset.`);
   }
   if (!contains(alignments, scene.composition.alignment)) {
     throw new Error(`Scene ${scene.scene_id} has an unsupported alignment.`);
@@ -211,6 +228,9 @@ const validateSceneCapabilities = (scene: Scene): void => {
   if (!Array.isArray(scene.on_screen_text)) {
     throw new Error(`Scene ${scene.scene_id} on-screen text must be a list.`);
   }
+  if (scene.graphic !== undefined && scene.graphic !== null) {
+    validateGraphic(scene);
+  }
   scene.on_screen_text.forEach((overlay, index) => {
     if (!overlay || typeof overlay.text !== 'string' || !overlay.text.trim()) {
       throw new Error(`Scene ${scene.scene_id} overlay ${index + 1} needs text.`);
@@ -228,6 +248,63 @@ const validateSceneCapabilities = (scene: Scene): void => {
     }
     if (duration !== null && (start ?? 0) + duration > scene.duration_seconds) {
       throw new Error(`Scene ${scene.scene_id} overlay ${index + 1} timing exceeds the scene.`);
+    }
+  });
+};
+
+const parseGraphicValue = (valueText: string): number => {
+  const match = valueText.match(/^[\$\u20ac\u00a3]?(-?(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?)\s*([KMBT%]?)$/i);
+  if (!match) throw new Error('must be numeric text with an optional unit');
+  const multiplier = { K: 1e3, M: 1e6, B: 1e9, T: 1e12 }[match[2].toUpperCase() as 'K' | 'M' | 'B' | 'T'] ?? 1;
+  return Number(match[1].replace(/,/g, '')) * multiplier;
+};
+
+const validateGraphic = (scene: Scene): void => {
+  const graphic = scene.graphic;
+  if (!graphic || !['bar_chart', 'line_graph', 'progress_bar', 'percentage_ring', 'number_counter'].includes(graphic.kind)) {
+    throw new Error(`Scene ${scene.scene_id} has an unsupported graphic.`);
+  }
+  if (typeof graphic.title !== 'string' || !graphic.title.trim()) {
+    throw new Error(`Scene ${scene.scene_id} graphic needs a title.`);
+  }
+  if (
+    typeof graphic.source_excerpt !== 'string' ||
+    !graphic.source_excerpt.trim() ||
+    !scene.narration_text.includes(graphic.source_excerpt)
+  ) {
+    throw new Error(`Scene ${scene.scene_id} graphic source must be an exact narration excerpt.`);
+  }
+  if (!graphic.source_excerpt.includes(graphic.title)) {
+    throw new Error(`Scene ${scene.scene_id} graphic title must appear in its narration excerpt.`);
+  }
+  if (!Array.isArray(graphic.data) || graphic.data.length < 1 || graphic.data.length > 8) {
+    throw new Error(`Scene ${scene.scene_id} graphic needs 1 to 8 data points.`);
+  }
+  if (['progress_bar', 'percentage_ring', 'number_counter'].includes(graphic.kind) && graphic.data.length !== 1) {
+    throw new Error(`Scene ${scene.scene_id} ${graphic.kind} graphic needs exactly one data point.`);
+  }
+  const labels = new Set<string>();
+  graphic.data.forEach((datum) => {
+    if (!datum || typeof datum.label !== 'string' || !datum.label.trim() || typeof datum.value_text !== 'string') {
+      throw new Error(`Scene ${scene.scene_id} graphic data needs a label and value.`);
+    }
+    if (labels.has(datum.label.toLocaleLowerCase())) {
+      throw new Error(`Scene ${scene.scene_id} graphic labels must be unique.`);
+    }
+    labels.add(datum.label.toLocaleLowerCase());
+    const excerpt = graphic.source_excerpt;
+    if (!excerpt.includes(datum.label) || !excerpt.includes(datum.value_text)) {
+      throw new Error(`Scene ${scene.scene_id} graphic labels and values must appear in its narration excerpt.`);
+    }
+    let value: number;
+    try {
+      value = parseGraphicValue(datum.value_text);
+    } catch {
+      throw new Error(`Scene ${scene.scene_id} graphic value ${datum.value_text} is invalid.`);
+    }
+    if (!Number.isFinite(value)) throw new Error(`Scene ${scene.scene_id} graphic values must be finite.`);
+    if (['progress_bar', 'percentage_ring'].includes(graphic.kind) && (value < 0 || value > 100)) {
+      throw new Error(`Scene ${scene.scene_id} progress value must be between 0 and 100.`);
     }
   });
 };

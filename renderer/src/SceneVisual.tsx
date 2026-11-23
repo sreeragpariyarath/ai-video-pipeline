@@ -3,6 +3,13 @@ import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from 'remo
 import type { Scene } from './sceneTypes';
 import { SceneBlocks, SceneChrome, SceneDetails } from './SceneElements';
 import { SceneArtwork } from './SceneArtwork';
+import { motionStyle } from './graphics/motion';
+import { AnimatedHeading } from './graphics/VisualComponents';
+import {
+  CompositionArtwork,
+  compositionPresetFor,
+  isVisualFirstPreset,
+} from './graphics/CompositionPresets';
 
 const ACCENT = '#78e0c2';
 
@@ -11,7 +18,7 @@ export const SceneVisual: React.FC<{ scene: Scene; durationInFrames: number }> =
   durationInFrames,
 }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { fps, width, height } = useVideoConfig();
   const entranceFrames = Math.max(
     1,
     Math.min(
@@ -24,6 +31,9 @@ export const SceneVisual: React.FC<{ scene: Scene; durationInFrames: number }> =
   const exitStart = Math.max(0, durationInFrames - exitFrames);
   const entrance = scene.motion.entrance;
   const exit = scene.motion.exit;
+  const preset = compositionPresetFor(scene);
+  const isSplitVisual = preset === 'split_visual';
+  const isHeroOverlay = preset === 'hero_overlay';
 
   const enterProgress = interpolate(frame, [0, entranceFrames], [0, 1], {
     extrapolateRight: 'clamp',
@@ -31,37 +41,25 @@ export const SceneVisual: React.FC<{ scene: Scene; durationInFrames: number }> =
   const exitProgress = interpolate(frame, [exitStart, durationInFrames], [0, 1], {
     extrapolateLeft: 'clamp',
   });
-  const enterOffset = (1 - enterProgress) * 42;
-  const exitOffset = exitProgress * 26;
-  const opacity = entrance === 'fade' || scene.transition.type === 'fade'
-    ? enterProgress * (exit === 'fade' ? 1 - exitProgress : 1)
-    : 1 - (exit === 'fade' ? exitProgress : 0);
+  const entranceStyle = motionStyle(entrance, frame, fps, {
+    durationFrames: entranceFrames,
+    distance: 42,
+  });
+  const exitStyle = motionStyle(exit, durationInFrames - frame, fps, {
+    durationFrames: exitFrames,
+    distance: 26,
+  });
+  const entranceOpacity = entrance === 'fade'
+    ? Number(entranceStyle.opacity ?? enterProgress)
+    : scene.transition.type === 'fade'
+      ? enterProgress
+      : 1;
+  const opacity = entranceOpacity *
+    (exit === 'none' ? 1 : Number(exitStyle.opacity ?? (1 - exitProgress)));
 
-  const enterX = entrance === 'slide_left'
-    ? enterOffset
-    : entrance === 'slide_right'
-      ? -enterOffset
-      : scene.transition.type === 'slide'
-        ? enterOffset
-        : 0;
-  const enterY = entrance === 'slide_up'
-    ? enterOffset
-    : entrance === 'slide_down'
-      ? -enterOffset
-      : 0;
-  const exitX = exit === 'slide_left'
-    ? -exitOffset
-    : exit === 'slide_right'
-      ? exitOffset
-      : 0;
-  const exitY = exit === 'slide_up'
-    ? -exitOffset
-    : exit === 'slide_down'
-      ? exitOffset
-      : 0;
-
-  const entranceScale = entrance === 'scale' ? 0.94 + enterProgress * 0.06 : 1;
-  const exitScale = exit === 'scale' ? 1 - exitProgress * 0.06 : 1;
+  const transitionOffsetX = entrance === 'none' && scene.transition.type === 'slide'
+    ? (1 - enterProgress) * 42
+    : 0;
   const emphasisScale = ['pulse', 'scale'].includes(scene.motion.emphasis)
     ? 1 + Math.max(0, Math.sin((frame / fps) * Math.PI * 2)) * 0.015
     : 1;
@@ -80,16 +78,19 @@ export const SceneVisual: React.FC<{ scene: Scene; durationInFrames: number }> =
     scene.on_screen_text.find((item) => item.role === 'title')?.text ??
     scene.on_screen_text[0]?.text ??
     scene.narration_text;
-  const isFullBleed = scene.composition.layout === 'full_bleed';
-  const isVisualFirst = scene.composition.hierarchy === 'visual_first';
+  const isFullBleed = scene.composition.layout === 'full_bleed' || isHeroOverlay;
+  const isVisualFirst = scene.composition.hierarchy === 'visual_first' || isVisualFirstPreset(preset);
+  const compositionAlignment = preset === 'headline' || isHeroOverlay
+    ? 'center'
+    : scene.composition.alignment;
   const titleSize = scene.scene_type === 'statistic'
     ? 108
     : scene.scene_type === 'title' || scene.scene_type === 'conclusion'
       ? 86
       : 68;
-  const underlineWidth = scene.motion.emphasis === 'underline'
-    ? interpolate(frame, [0, entranceFrames], [12, 108], { extrapolateRight: 'clamp' })
-    : 76;
+  const headingEntrance = entrance === 'blur_reveal' || entrance === 'pop'
+    ? entrance
+    : 'rise';
 
   return (
     <AbsoluteFill
@@ -107,7 +108,10 @@ export const SceneVisual: React.FC<{ scene: Scene; durationInFrames: number }> =
         overflow: 'hidden',
       }}
     >
-      <SceneArtwork scene={scene} />
+      {!isSplitVisual ? <SceneArtwork scene={scene} /> : null}
+      {isHeroOverlay ? (
+        <CompositionArtwork scene={scene} preset="hero_overlay" frame={frame} fps={fps} />
+      ) : null}
       <div
         style={{
           position: 'absolute',
@@ -125,54 +129,49 @@ export const SceneVisual: React.FC<{ scene: Scene; durationInFrames: number }> =
           width: '100%',
           maxWidth: isFullBleed ? 'none' : '1450px',
           opacity,
-          transform: `translate(${enterX + exitX + viewportPan}px, ${enterY + exitY}px) scale(${entranceScale * exitScale * emphasisScale * viewportScale})`,
-          textAlign: scene.composition.alignment,
+          transform: `${entranceStyle.transform ?? ''} ${exitStyle.transform ?? ''} translate(${transitionOffsetX + viewportPan}px, 0px) scale(${emphasisScale * viewportScale})`,
+          filter: entranceStyle.filter,
+          textAlign: compositionAlignment,
+          position: 'relative',
+          display: isSplitVisual ? 'grid' : 'block',
+          gridTemplateColumns: isSplitVisual && width > height ? 'minmax(0, .9fr) minmax(0, 1.1fr)' : 'minmax(0, 1fr)',
+          alignItems: 'center',
+          gap: isSplitVisual ? 36 : undefined,
         }}
       >
-        {isVisualFirst ? (
-          <SceneBlocks scene={scene} frame={frame} fps={fps} />
+        {isSplitVisual ? (
+          <CompositionArtwork scene={scene} preset="split_visual" frame={frame} fps={fps} />
         ) : null}
-        <div
-          style={{
-            width: underlineWidth,
-            height: 7,
-            borderRadius: 20,
-            background: ACCENT,
-            margin: scene.composition.alignment === 'center' ? '0 auto 30px' : '0 0 30px',
-          }}
-        />
-        <div
-          style={{
-            maxWidth: '100%',
-            marginLeft: scene.composition.alignment === 'center' ? 'auto' : 0,
-            marginRight: scene.composition.alignment === 'center' ? 'auto' : 0,
-            fontSize: titleSize,
-            color: scene.scene_type === 'statistic' ? ACCENT : '#f6f7fb',
-            fontWeight: 800,
-            lineHeight: 1.08,
-            letterSpacing: '-0.04em',
-            textWrap: 'balance',
-            textShadow: '0 12px 50px rgba(0,0,0,.35)',
-          }}
-        >
-          {title}
-        </div>
-        {scene.scene_type === 'statistic' ? (
-          <div
-            style={{
-              width: 'min(74%, 650px)',
-              height: 3,
-              margin: '30px auto 0',
-              background: `linear-gradient(90deg, transparent, ${ACCENT}, transparent)`,
-            }}
+        <div style={{ minWidth: 0, position: 'relative', zIndex: 1 }}>
+          {isVisualFirst ? (
+            <SceneBlocks scene={scene} frame={frame} fps={fps} preset={preset} />
+          ) : null}
+          <AnimatedHeading
+            title={title}
+            frame={frame}
+            fps={fps}
+            size={isHeroOverlay ? Math.round(titleSize * 1.1) : titleSize}
+            alignment={compositionAlignment}
+            preset={headingEntrance}
+            underline={scene.motion.emphasis === 'underline'}
           />
-        ) : null}
-        {!isVisualFirst ? (
-          <SceneBlocks scene={scene} frame={frame} fps={fps} />
-        ) : null}
-        <SceneDetails scene={scene} frame={frame} fps={fps} />
+          {scene.scene_type === 'statistic' && !scene.graphic ? (
+            <div
+              style={{
+                width: 'min(74%, 650px)',
+                height: 3,
+                margin: '30px auto 0',
+                background: `linear-gradient(90deg, transparent, ${ACCENT}, transparent)`,
+              }}
+            />
+          ) : null}
+          {!isVisualFirst ? (
+            <SceneBlocks scene={scene} frame={frame} fps={fps} preset={preset} />
+          ) : null}
+          <SceneDetails scene={scene} frame={frame} fps={fps} preset={preset} />
+        </div>
       </div>
-      <SceneChrome order={scene.order} type={scene.scene_type} />
+      <SceneChrome order={scene.order} type={`${scene.scene_type} / ${preset}`} />
     </AbsoluteFill>
   );
 };

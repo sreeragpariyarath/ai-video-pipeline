@@ -136,7 +136,7 @@ Reported full suite after Task 2: **1,020 passed**, one existing warning. Task 2
 | 3 — Script Engine | Complete |
 | 4 - Scene Planner | Complete |
 | 5 - Remotion Renderer | Complete |
-| 6 — Motion Graphics Library | Planned |
+| 6 — Motion Graphics Library | In progress |
 | 7 — Audio & Voice | Planned |
 | 8 — Quality Control | Planned |
 | 9 — Production Automation | Planned |
@@ -160,13 +160,13 @@ Implemented `validate_scene_coverage` to check script/research identity, format 
 
 **MVP status: complete.** A typed `ScenePlan` is passed as JSON props to a Remotion composition. The renderer has format-aware 30 fps profiles (Shorts: 1080x1920; mid/long form: 1920x1080), duration-derived frame allocation, runtime validation with explicit unsupported-feature errors, and reusable scene components. It supports controlled typography, timed text overlays, solid/gradient backgrounds, emphasis, statistic callouts, comparisons, process flows, diagrams, timelines, deterministic geometric illustration placeholders, viewport/entrance/exit motion, and transitions. AI-provided freeform visual descriptions are never executed as code or rendered as raw instructions.
 
-A checked-in `renderer/sample-plan.json` covers all nine scene types and is renderable with `cd renderer && npm run render:sample`. The resulting 13.5-second MP4 was rendered at 405 frames, 1080x1920, 30 fps. Mock pipeline renders were also verified for portrait Shorts and landscape long-form output. The sample is synthetic and illustrates visual behavior, not factual content.
+A local mock-to-MP4 render was verified. The sample has since been extended in Phase 6; see the Phase 6 showcase details below. Mock pipeline renders were also verified for portrait Shorts and landscape long-form output. Sample content is synthetic and illustrates visual behavior, not factual content.
 
 **Out of scope for Phase 5:** voice/audio, sourced illustrations or licensed assets, a larger motion preset library, and automated render QC belong to later phases.
 
 ### Phase 5 verification
 - Renderer TypeScript check: `npm run typecheck` passed.
-- Showcase: `npm run render:sample` rendered all 405 frames; ffprobe confirmed 1080x1920, 30 fps, 13.5 seconds.
+- Initial Phase 5 showcase render: 405 frames; ffprobe confirmed 1080x1920, 30 fps, 13.5 seconds (the same sample plan is being expanded during Phase 6).
 - Mock production renders verified: Shorts 1080x1920 and long form 1920x1080, both 30 fps and 12 seconds.
 - Python suite after Phase 4/5 pipeline changes: 1,096 passed (one existing optional SOCKS dependency warning).
 
@@ -181,7 +181,48 @@ The output is `renderer/sample-output.mp4` (ignored by Git). Remotion accepts th
 
 ## 9. Phase 6 — Motion Graphics Library
 
-Reusable controlled presets: text reveals, count-up, scale/fade/slide, stagger, highlight/underline, card transitions, diagram reveals, timelines, camera/viewport motion if supported, and transitions. Prioritize clarity and narrative; avoid motion for its own sake.
+**Status: in progress.** Phase 6 expands the Phase 5 scene renderer into a reusable visual storytelling library. Keep graphics renderer-owned, frame-driven, deterministic, and tied to exact script narration when they show numeric data. Do not infer or invent metrics. Tasks 6.1–6.4 are implemented and reviewed in a rendered showcase; background atmosphere and cinematic transitions remain.
+
+### Task 6.1 — Visual Component Library (implemented)
+- Shared animated heading, card/callout, and metric callout components.
+- Shared motion utility used by scene content and visual elements.
+- Chart components are separate reusable renderer primitives rather than hand-built per-scene markup.
+
+### Task 6.2 — Motion Presets (implemented initial set)
+- Frame-driven fade, rise, directional slides, scale, pop, and blur reveal.
+- Stagger delay is derived from element index and frame rate; no random values or runtime CSS animation.
+- Scene entrance/exit effects and emphasis continue to use the validated `SceneMotion` vocabulary.
+
+### Task 6.3 — Data Visualization Graphics (implemented initial set)
+- Bar charts, line graphs, percentage rings, progress bars, and number counters.
+- Graphics use a closed typed payload. Each datum's label and displayed value must appear in an exact narration excerpt; Python and renderer validation reject unsupported shapes, malformed values, and unsupported progress ranges.
+- The scene planner may propose a graphic only when it can copy the values and labels from the narration excerpt. It is explicitly told not to infer metrics.
+
+### Task 6.4 — Scene Composition Presets (implemented)
+- Added a closed preset vocabulary: headline, number explainer, two/three-way comparison, timeline, process walkthrough, quote callout, diagram, split visual, and hero overlay.
+- The scene planner is prompted to choose a preset for each scene and only use a three-way comparison when it has three distinct items.
+- Legacy plans may use `auto`; application code resolves that to a deterministic preset based on scene type. The renderer validates explicit preset names and maps each preset to reusable layouts and components.
+
+### Phase 6 showcase
+`renderer/sample-plan.json` now contains ten synthetic scenes that exercise all ten named composition presets and four narration-backed graphics: a line graph, three-value bar chart, percentage ring, and count-up. The plan is renderable with `cd renderer && npm run render:sample`. It is designed to evaluate readable visual variety and animation together; mock figures are demonstrative only and are not factual claims.
+
+### Phase 6 implementation check
+- `npm run typecheck` passed after adding the graphics contract and shared motion utilities.
+- The sample `ScenePlan` passed Python schema validation with all ten explicit presets and four graphics; every graphic label, value, title, and on-screen overlay is required to appear in its narration.
+- The showcase rendered 810 frames at 30 fps (27 seconds), 1080x1920 H.264. A contact sheet was reviewed to check the graph, comparison, process, ring, and count-up scenes together.
+
+### Remaining Phase 6 tasks
+- **6.5 Background and atmosphere:** restrained grid, grain/noise, light, particles, geometric layers, and parallax treatments with deterministic settings.
+- **6.6 Cinematic transitions:** controlled wipes, pushes, zooms, masks, and shape reveals without frame loss or scene-duration overlap.
+
+### Run and inspect the showcase
+```bash
+cd renderer
+npm install
+npm run typecheck
+npm run render:sample
+```
+The output is `renderer/sample-output.mp4` (ignored by Git). Phase 6 does not include generated/licensed artwork, voice, sound effects, or music; those remain separate systems.
 
 ## 10. Phase 7 — Audio & Voice
 

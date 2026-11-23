@@ -1,17 +1,17 @@
 {
   "plan": {
-    "scene_plan_id": "renderer-phase5-showcase",
-    "script_id": "renderer-showcase-script",
-    "research_id": "renderer-showcase-research",
+    "scene_plan_id": "phase6-graphics-showcase",
+    "script_id": "phase6-showcase-script",
+    "research_id": "phase6-showcase-research",
     "format": "short",
-    "target_seconds": 13.5,
-    "planned_seconds": 13.5,
+    "target_seconds": 27,
+    "planned_seconds": 27,
     "scenes": [
       {
         "scene_id": "sample-scene-01",
         "order": 1,
         "scene_type": "title",
-        "duration_seconds": 1.5,
+        "duration_seconds": 2.7,
         "script_segment_ids": [
           "sample-segment-01"
         ],
@@ -21,7 +21,8 @@
           "layout": "centered",
           "alignment": "center",
           "hierarchy": "text_first",
-          "viewport": "push_in"
+          "viewport": "push_in",
+          "preset": "headline"
         },
         "motion": {
           "entrance": "slide_up",
@@ -51,7 +52,7 @@
         "scene_id": "sample-scene-02",
         "order": 2,
         "scene_type": "text_focus",
-        "duration_seconds": 1.5,
+        "duration_seconds": 2.7,
         "script_segment_ids": [
           "sample-segment-02"
         ],
@@ -61,7 +62,8 @@
           "layout": "centered",
           "alignment": "center",
           "hierarchy": "text_first",
-          "viewport": "pan_left"
+          "viewport": "pan_left",
+          "preset": "quote_callout"
         },
         "motion": {
           "entrance": "scale",
@@ -91,39 +93,28 @@
         "scene_id": "sample-scene-03",
         "order": 3,
         "scene_type": "statistic",
-        "duration_seconds": 1.5,
+        "duration_seconds": 2.7,
         "script_segment_ids": [
           "sample-segment-03"
         ],
-        "narration_text": "A number changes the story 12 A number changes the story.",
+        "narration_text": "Example only: The index moved from 12 in 2022 to 20 in 2024.",
         "visual_description": "Synthetic renderer preview for statistic; not factual content.",
         "composition": {
           "layout": "centered",
           "alignment": "center",
           "hierarchy": "text_first",
-          "viewport": "pull_out"
+          "viewport": "pull_out",
+          "preset": "number_explainer"
         },
         "motion": {
-          "entrance": "slide_left",
+          "entrance": "pop",
           "exit": "none",
           "emphasis": "scale"
         },
         "on_screen_text": [
           {
-            "text": "A number changes the story",
+            "text": "The index moved",
             "role": "title",
-            "start_seconds": null,
-            "duration_seconds": null
-          },
-          {
-            "text": "12",
-            "role": "emphasis",
-            "start_seconds": null,
-            "duration_seconds": null
-          },
-          {
-            "text": "A number changes the story.",
-            "role": "subtitle",
             "start_seconds": null,
             "duration_seconds": null
           }
@@ -131,51 +122,49 @@
         "transition": {
           "type": "cut",
           "duration_seconds": 0.0
+        },
+        "graphic": {
+          "kind": "line_graph",
+          "title": "The index moved from 12 in 2022 to 20 in 2024",
+          "source_excerpt": "The index moved from 12 in 2022 to 20 in 2024",
+          "data": [
+            {
+              "label": "2022",
+              "value_text": "12"
+            },
+            {
+              "label": "2024",
+              "value_text": "20"
+            }
+          ]
         }
       },
       {
         "scene_id": "sample-scene-04",
         "order": 4,
         "scene_type": "comparison",
-        "duration_seconds": 1.5,
+        "duration_seconds": 2.7,
         "script_segment_ids": [
           "sample-segment-04"
         ],
-        "narration_text": "Two paths, one decision Option A Option B Both lead to a trade-off.",
+        "narration_text": "Example costs: Plan A costs $12, Plan B costs $20, and Plan C costs $15.",
         "visual_description": "Synthetic renderer preview for comparison; not factual content.",
         "composition": {
           "layout": "split",
           "alignment": "center",
           "hierarchy": "visual_first",
-          "viewport": "static"
+          "viewport": "static",
+          "preset": "comparison_three"
         },
         "motion": {
-          "entrance": "fade",
+          "entrance": "blur_reveal",
           "exit": "none",
           "emphasis": "none"
         },
         "on_screen_text": [
           {
-            "text": "Two paths, one decision",
+            "text": "Example costs",
             "role": "title",
-            "start_seconds": null,
-            "duration_seconds": null
-          },
-          {
-            "text": "Option A",
-            "role": "label",
-            "start_seconds": null,
-            "duration_seconds": null
-          },
-          {
-            "text": "Option B",
-            "role": "label",
-            "start_seconds": null,
-            "duration_seconds": null
-          },
-          {
-            "text": "Both lead to a trade-off.",
-            "role": "label",
             "start_seconds": null,
             "duration_seconds": null
           }
@@ -183,13 +172,32 @@
         "transition": {
           "type": "fade",
           "duration_seconds": 0.2
+        },
+        "graphic": {
+          "kind": "bar_chart",
+          "title": "Plan A costs $12, Plan B costs $20, and Plan C costs $15",
+          "source_excerpt": "Plan A costs $12, Plan B costs $20, and Plan C costs $15",
+          "data": [
+            {
+              "label": "Plan A",
+              "value_text": "$12"
+            },
+            {
+              "label": "Plan B",
+              "value_text": "$20"
+            },
+            {
+              "label": "Plan C",
+              "value_text": "$15"
+            }
+          ]
         }
       },
       {
         "scene_id": "sample-scene-05",
         "order": 5,
         "scene_type": "process",
-        "duration_seconds": 1.5,
+        "duration_seconds": 2.7,
         "script_segment_ids": [
           "sample-segment-05"
         ],
@@ -199,7 +207,8 @@
           "layout": "stacked",
           "alignment": "center",
           "hierarchy": "visual_first",
-          "viewport": "push_in"
+          "viewport": "push_in",
+          "preset": "process_walkthrough"
         },
         "motion": {
           "entrance": "slide_up",
@@ -247,7 +256,7 @@
         "scene_id": "sample-scene-06",
         "order": 6,
         "scene_type": "diagram",
-        "duration_seconds": 1.5,
+        "duration_seconds": 2.7,
         "script_segment_ids": [
           "sample-segment-06"
         ],
@@ -257,7 +266,8 @@
           "layout": "grid",
           "alignment": "center",
           "hierarchy": "visual_first",
-          "viewport": "pan_left"
+          "viewport": "pan_left",
+          "preset": "diagram"
         },
         "motion": {
           "entrance": "scale",
@@ -305,50 +315,137 @@
         "scene_id": "sample-scene-07",
         "order": 7,
         "scene_type": "timeline",
-        "duration_seconds": 1.5,
+        "duration_seconds": 2.7,
         "script_segment_ids": [
           "sample-segment-07"
         ],
-        "narration_text": "How the story unfolds First Then Finally The order changes the result.",
+        "narration_text": "Example milestone: rollout reached 68% completion.",
         "visual_description": "Synthetic renderer preview for timeline; not factual content.",
         "composition": {
           "layout": "centered",
           "alignment": "center",
           "hierarchy": "visual_first",
-          "viewport": "pull_out"
+          "viewport": "pull_out",
+          "preset": "timeline"
         },
         "motion": {
-          "entrance": "slide_left",
+          "entrance": "slide_right",
           "exit": "none",
           "emphasis": "scale"
         },
         "on_screen_text": [
           {
-            "text": "How the story unfolds",
+            "text": "Example milestone",
             "role": "title",
             "start_seconds": null,
             "duration_seconds": null
           },
           {
-            "text": "First",
+            "text": "rollout reached 68% completion.",
+            "role": "subtitle",
+            "start_seconds": null,
+            "duration_seconds": null
+          }
+        ],
+        "transition": {
+          "type": "fade",
+          "duration_seconds": 0.2
+        },
+        "graphic": {
+          "kind": "percentage_ring",
+          "title": "rollout reached 68% completion",
+          "source_excerpt": "rollout reached 68% completion",
+          "data": [
+            {
+              "label": "completion",
+              "value_text": "68%"
+            }
+          ]
+        }
+      },
+      {
+        "scene_id": "sample-scene-08",
+        "order": 8,
+        "scene_type": "illustration",
+        "duration_seconds": 2.7,
+        "script_segment_ids": [
+          "sample-segment-08"
+        ],
+        "narration_text": "In the mock example, value reaches $3.5B today.",
+        "visual_description": "Synthetic renderer preview for illustration; not factual content.",
+        "composition": {
+          "layout": "full_bleed",
+          "alignment": "center",
+          "hierarchy": "text_first",
+          "viewport": "static",
+          "preset": "split_visual"
+        },
+        "motion": {
+          "entrance": "fade",
+          "exit": "none",
+          "emphasis": "none"
+        },
+        "on_screen_text": [
+          {
+            "text": "In the mock example",
+            "role": "title",
+            "start_seconds": null,
+            "duration_seconds": null
+          }
+        ],
+        "transition": {
+          "type": "slide",
+          "duration_seconds": 0.2
+        },
+        "graphic": {
+          "kind": "number_counter",
+          "title": "value reaches $3.5B today",
+          "source_excerpt": "mock example, value reaches $3.5B today",
+          "data": [
+            {
+              "label": "mock example",
+              "value_text": "$3.5B"
+            }
+          ]
+        }
+      },
+      {
+        "scene_id": "sample-scene-09",
+        "order": 9,
+        "scene_type": "text_focus",
+        "duration_seconds": 2.7,
+        "script_segment_ids": [
+          "sample-segment-09"
+        ],
+        "narration_text": "The trade-off: Option A keeps flexibility, while Option B reduces cost.",
+        "visual_description": "Synthetic two-way comparison for layout review; not factual content.",
+        "composition": {
+          "preset": "comparison_two",
+          "layout": "split",
+          "alignment": "center",
+          "hierarchy": "visual_first",
+          "viewport": "static"
+        },
+        "motion": {
+          "entrance": "slide_left",
+          "exit": "none",
+          "emphasis": "none"
+        },
+        "on_screen_text": [
+          {
+            "text": "The trade-off",
+            "role": "title",
+            "start_seconds": null,
+            "duration_seconds": null
+          },
+          {
+            "text": "Option A keeps flexibility",
             "role": "label",
             "start_seconds": null,
             "duration_seconds": null
           },
           {
-            "text": "Then",
-            "role": "label",
-            "start_seconds": null,
-            "duration_seconds": null
-          },
-          {
-            "text": "Finally",
-            "role": "label",
-            "start_seconds": null,
-            "duration_seconds": null
-          },
-          {
-            "text": "The order changes the result.",
+            "text": "Option B reduces cost",
             "role": "label",
             "start_seconds": null,
             "duration_seconds": null
@@ -360,52 +457,12 @@
         }
       },
       {
-        "scene_id": "sample-scene-08",
-        "order": 8,
-        "scene_type": "illustration",
-        "duration_seconds": 1.5,
-        "script_segment_ids": [
-          "sample-segment-08"
-        ],
-        "narration_text": "A system in motion A geometric illustration placeholder.",
-        "visual_description": "Synthetic renderer preview for illustration; not factual content.",
-        "composition": {
-          "layout": "full_bleed",
-          "alignment": "center",
-          "hierarchy": "text_first",
-          "viewport": "static"
-        },
-        "motion": {
-          "entrance": "fade",
-          "exit": "none",
-          "emphasis": "none"
-        },
-        "on_screen_text": [
-          {
-            "text": "A system in motion",
-            "role": "title",
-            "start_seconds": null,
-            "duration_seconds": null
-          },
-          {
-            "text": "A geometric illustration placeholder.",
-            "role": "subtitle",
-            "start_seconds": null,
-            "duration_seconds": null
-          }
-        ],
-        "transition": {
-          "type": "slide",
-          "duration_seconds": 0.2
-        }
-      },
-      {
-        "scene_id": "sample-scene-09",
-        "order": 9,
+        "scene_id": "sample-scene-10",
+        "order": 10,
         "scene_type": "conclusion",
-        "duration_seconds": 1.5,
+        "duration_seconds": 2.7,
         "script_segment_ids": [
-          "sample-segment-09"
+          "sample-segment-10"
         ],
         "narration_text": "Now you can see the pattern The takeaway is easier to spot.",
         "visual_description": "Synthetic renderer preview for conclusion; not factual content.",
@@ -413,7 +470,8 @@
           "layout": "centered",
           "alignment": "center",
           "hierarchy": "text_first",
-          "viewport": "push_in"
+          "viewport": "push_in",
+          "preset": "hero_overlay"
         },
         "motion": {
           "entrance": "slide_up",
