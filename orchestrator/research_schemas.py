@@ -16,7 +16,7 @@ from pydantic import (
 
 RESEARCH_SCHEMA_VERSION = 1
 
-SourceType = Literal["primary", "secondary", "informal"]
+SourceType = Literal["primary", "secondary", "informal", "unknown"]
 ClaimCategory = Literal[
     "financial", "technical", "historical", "scientific", "business", "general"
 ]
