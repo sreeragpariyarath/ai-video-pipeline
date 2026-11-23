@@ -45,7 +45,7 @@
         ],
         "transition": {
           "type": "fade",
-          "duration_seconds": 0.2
+          "duration_seconds": 0.45
         },
         "atmosphere": {
           "layers": [
@@ -96,8 +96,9 @@
           }
         ],
         "transition": {
-          "type": "slide",
-          "duration_seconds": 0.2
+          "type": "wipe",
+          "duration_seconds": 0.4,
+          "direction": "left"
         },
         "atmosphere": {
           "layers": [
@@ -149,8 +150,9 @@
           }
         ],
         "transition": {
-          "type": "cut",
-          "duration_seconds": 0.0
+          "type": "push",
+          "duration_seconds": 0.45,
+          "direction": "up"
         },
         "graphic": {
           "kind": "line_graph",
@@ -217,8 +219,8 @@
           }
         ],
         "transition": {
-          "type": "fade",
-          "duration_seconds": 0.2
+          "type": "zoom",
+          "duration_seconds": 0.45
         },
         "graphic": {
           "kind": "bar_chart",
@@ -306,8 +308,9 @@
           }
         ],
         "transition": {
-          "type": "slide",
-          "duration_seconds": 0.2
+          "type": "mask",
+          "duration_seconds": 0.45,
+          "shape": "circle"
         },
         "atmosphere": {
           "layers": [
@@ -376,8 +379,9 @@
           }
         ],
         "transition": {
-          "type": "cut",
-          "duration_seconds": 0.0
+          "type": "shape_reveal",
+          "duration_seconds": 0.45,
+          "shape": "diamond"
         },
         "atmosphere": {
           "layers": [
@@ -428,8 +432,9 @@
           }
         ],
         "transition": {
-          "type": "fade",
-          "duration_seconds": 0.2
+          "type": "slide",
+          "duration_seconds": 0.4,
+          "direction": "right"
         },
         "graphic": {
           "kind": "percentage_ring",
@@ -485,8 +490,8 @@
           }
         ],
         "transition": {
-          "type": "slide",
-          "duration_seconds": 0.2
+          "type": "fade",
+          "duration_seconds": 0.4
         },
         "graphic": {
           "kind": "number_counter",
@@ -554,8 +559,9 @@
           }
         ],
         "transition": {
-          "type": "fade",
-          "duration_seconds": 0.2
+          "type": "mask",
+          "duration_seconds": 0.45,
+          "shape": "ellipse"
         },
         "atmosphere": {
           "layers": [
@@ -606,8 +612,9 @@
           }
         ],
         "transition": {
-          "type": "cut",
-          "duration_seconds": 0.0
+          "type": "push",
+          "duration_seconds": 0.45,
+          "direction": "down"
         },
         "atmosphere": {
           "layers": [

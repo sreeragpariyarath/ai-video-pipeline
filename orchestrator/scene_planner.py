@@ -154,7 +154,9 @@ class ScenePlanner:
                     "subtle atmosphere layers from gradient_shift, grid, grain, particles, "
                     "soft_light, geometry, and parallax. Use only named palette/anchor tokens, "
                     "intensity 0.0-0.2, combined intensity at most 0.35; keep static layers static. "
-                    "Never use random values or arbitrary CSS."
+                    "Never use random values or arbitrary CSS. For scene transitions, choose cut, "
+                    "fade, slide, wipe, push, zoom, mask, or shape_reveal, with a duration up to "
+                    "0.8 seconds and optional left/right/up/down direction or circle/diamond/ellipse shape."
                 ),
                 prompt=(
                     f"Design renderer-friendly scenes for a {script.format} video.\n"
@@ -173,6 +175,7 @@ class ScenePlanner:
                     "chart values. Use number_counter or progress graphics only for one datum; "
                     "use bar_chart or line_graph for multiple narrated data points. "
                     "Atmosphere is optional and should be omitted when it does not help the story. "
+                    "Use cinematic transitions sparingly and keep their duration at or below 0.8 seconds. "
                     "Return ScenePlanContent."
                 ),
                 schema=ScenePlanContent,

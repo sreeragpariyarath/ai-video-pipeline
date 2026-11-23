@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Scene } from '../sceneTypes';
 import { motionStyle } from './motion';
+import { THEME } from './theme';
 
 export type CompositionPreset = NonNullable<Scene['composition']['preset']>;
 
@@ -59,19 +60,19 @@ export const CompositionArtwork: React.FC<{
     >
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#78e0c2" stopOpacity=".9" />
-          <stop offset="1" stopColor="#5575ab" stopOpacity=".18" />
+          <stop offset="0" stopColor={THEME.accentBright} stopOpacity=".9" />
+          <stop offset="1" stopColor={THEME.blue} stopOpacity=".18" />
         </linearGradient>
       </defs>
       <circle cx="360" cy="292" r="218" fill={`url(#${gradientId})`} opacity=".34" />
-      <circle cx="360" cy="292" r="250" fill="none" stroke="#78e0c2" strokeOpacity=".32" strokeWidth="3" />
-      <path d="M134 356 C230 152 404 455 584 178" fill="none" stroke="#78e0c2" strokeOpacity=".8" strokeWidth="8" strokeLinecap="round" />
-      <rect x="222" y="198" width="276" height="188" rx="34" fill="#111a2a" fillOpacity=".88" stroke="#78e0c2" strokeOpacity=".58" strokeWidth="3" />
-      <rect x="254" y="235" width="70" height="116" rx="13" fill="#78e0c2" fillOpacity=".58" />
-      <rect x="350" y="276" width="52" height="75" rx="13" fill="#8db6ff" fillOpacity=".68" />
-      <rect x="428" y="218" width="40" height="133" rx="13" fill="#78e0c2" fillOpacity=".86" />
-      <circle cx="143" cy="145" r="12" fill="#78e0c2" />
-      <circle cx="590" cy="438" r="9" fill="#8db6ff" />
+      <circle cx="360" cy="292" r="250" fill="none" stroke={THEME.accent} strokeOpacity=".32" strokeWidth="3" />
+      <path d="M134 356 C230 152 404 455 584 178" fill="none" stroke={THEME.accent} strokeOpacity=".8" strokeWidth="8" strokeLinecap="round" />
+      <rect x="222" y="198" width="276" height="188" rx="34" fill={THEME.surface} fillOpacity=".94" stroke={THEME.accent} strokeOpacity=".58" strokeWidth="3" />
+      <rect x="254" y="235" width="70" height="116" rx="13" fill={THEME.accentBright} fillOpacity=".72" />
+      <rect x="350" y="276" width="52" height="75" rx="13" fill={THEME.blue} fillOpacity=".68" />
+      <rect x="428" y="218" width="40" height="133" rx="13" fill={THEME.green} fillOpacity=".78" />
+      <circle cx="143" cy="145" r="12" fill={THEME.accent} />
+      <circle cx="590" cy="438" r="9" fill={THEME.blue} />
     </svg>
   );
 };

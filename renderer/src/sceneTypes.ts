@@ -57,7 +57,12 @@ export type Scene = {
     duration_seconds: number | null;
   }>;
   graphic?: SceneGraphic | null;
-  transition: { type: 'cut' | 'fade' | 'slide'; duration_seconds: number };
+  transition: {
+    type: 'cut' | 'fade' | 'slide' | 'wipe' | 'push' | 'zoom' | 'mask' | 'shape_reveal';
+    duration_seconds: number;
+    direction?: 'left' | 'right' | 'up' | 'down';
+    shape?: 'circle' | 'diamond' | 'ellipse';
+  };
 };
 
 export type GraphicDatum = { label: string; value_text: string };
@@ -190,7 +195,7 @@ const validateSceneCapabilities = (scene: Scene): void => {
   const viewports = ['static', 'push_in', 'pull_out', 'pan_left', 'pan_right'] as const;
   const motions = ['none', 'fade', 'slide_up', 'slide_down', 'slide_left', 'slide_right', 'scale', 'pop', 'blur_reveal'] as const;
   const emphasis = ['none', 'pulse', 'scale', 'underline'] as const;
-  const transitions = ['cut', 'fade', 'slide'] as const;
+  const transitions = ['cut', 'fade', 'slide', 'wipe', 'push', 'zoom', 'mask', 'shape_reveal'] as const;
   const roles = ['title', 'subtitle', 'label', 'emphasis', 'caption'] as const;
 
   if (!scene.composition || !contains(layouts, scene.composition.layout)) {
@@ -248,6 +253,12 @@ const validateSceneCapabilities = (scene: Scene): void => {
   }
   if (!scene.transition || !contains(transitions, scene.transition.type)) {
     throw new Error(`Scene ${scene.scene_id} has an unsupported transition.`);
+  }
+  if (scene.transition.direction !== undefined && !contains(['left', 'right', 'up', 'down'], scene.transition.direction)) {
+    throw new Error(`Scene ${scene.scene_id} has an unsupported transition direction.`);
+  }
+  if (scene.transition.shape !== undefined && !contains(['circle', 'diamond', 'ellipse'], scene.transition.shape)) {
+    throw new Error(`Scene ${scene.scene_id} has an unsupported transition shape.`);
   }
   const transitionSeconds = scene.transition.duration_seconds;
   if (!Number.isFinite(transitionSeconds) || transitionSeconds < 0 || transitionSeconds > 2) {

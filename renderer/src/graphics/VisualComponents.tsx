@@ -1,8 +1,9 @@
 import React from 'react';
 import { interpolate } from 'remotion';
 import { motionStyle } from './motion';
+import { THEME } from './theme';
 
-const ACCENT = '#78e0c2';
+const ACCENT = THEME.accent;
 
 export const AnimatedHeading: React.FC<{
   title: string;
@@ -29,12 +30,12 @@ export const AnimatedHeading: React.FC<{
     <div
       style={{
         fontSize: size,
-        color: '#f6f7fb',
+        color: THEME.text,
         fontWeight: 800,
         lineHeight: 1.08,
         letterSpacing: '-0.04em',
         textWrap: 'balance',
-        textShadow: '0 12px 50px rgba(0,0,0,.35)',
+        textShadow: '0 2px 18px rgba(42,45,39,.08)',
         ...motionStyle(preset, frame, fps, { durationFrames: Math.round(0.5 * fps), delayFrames: 3 }),
       }}
     >
@@ -56,12 +57,12 @@ export const CalloutCard: React.FC<{
       placeItems: 'center',
       minHeight: 76,
       padding: '18px 24px',
-      border: `1px solid ${accent ? `${ACCENT}88` : 'rgba(255,255,255,.12)'}`,
+      border: `1px solid ${accent ? `${THEME.accent}55` : THEME.line}`,
       borderRadius: 20,
       background: accent
-        ? 'linear-gradient(140deg, rgba(120,224,194,.14), rgba(22,31,49,.92))'
-        : 'rgba(22,31,49,.88)',
-      boxShadow: '0 18px 58px rgba(0,0,0,.24)',
+        ? `linear-gradient(140deg, ${THEME.accentSoft}, ${THEME.surface})`
+        : THEME.surface,
+      boxShadow: `0 18px 58px ${THEME.shadow}`,
       ...motionStyle('rise', frame, fps, { delayFrames, distance: 18 }),
     }}
   >
@@ -80,13 +81,13 @@ export const MetricCallout: React.FC<{
     <div style={{ color: ACCENT, fontSize: 68, fontWeight: 800, lineHeight: 1.05 }}>
       {value}
     </div>
-    <div style={{ color: '#aab4c7', marginTop: 9, fontSize: 20 }}>{label}</div>
+    <div style={{ color: THEME.muted, marginTop: 9, fontSize: 20 }}>{label}</div>
     <div
       style={{
         width: '100%',
         height: 3,
         marginTop: 16,
-        background: `linear-gradient(90deg, ${ACCENT} ${Math.max(0, Math.min(100, progress))}%, rgba(255,255,255,.12) 0)`,
+        background: `linear-gradient(90deg, ${THEME.accentBright} ${Math.max(0, Math.min(100, progress))}%, ${THEME.line} 0)`,
       }}
     />
   </CalloutCard>

@@ -1,12 +1,13 @@
 import React from 'react';
 import type { BackgroundLayer, Scene } from '../sceneTypes';
+import { THEME } from './theme';
 
 const COLORS: Record<BackgroundLayer['palette'], string> = {
-  mint: '#78e0c2',
-  blue: '#70a9e8',
-  violet: '#a58bdf',
-  amber: '#e6b76f',
-  neutral: '#b7c2d0',
+  mint: THEME.green,
+  blue: THEME.blue,
+  violet: '#78678B',
+  amber: THEME.accent,
+  neutral: THEME.subtle,
 };
 
 const ANCHORS: Record<BackgroundLayer['anchor'], string> = {
@@ -57,7 +58,7 @@ export const BackgroundAtmosphere: React.FC<{
 
         if (layer.kind === 'gradient_shift') {
           return (
-            <div key={layer.kind} style={{ position: 'absolute', inset: '-8%', opacity, transform: `translate(${shift}%, ${-shift}%)`, background: `radial-gradient(ellipse at ${anchor}, ${color}66, transparent 58%), radial-gradient(ellipse at 72% 74%, #6b79d844, transparent 54%)` }} />
+            <div key={layer.kind} style={{ position: 'absolute', inset: '-8%', opacity, transform: `translate(${shift}%, ${-shift}%)`, background: `radial-gradient(ellipse at ${anchor}, ${color}44, transparent 58%), radial-gradient(ellipse at 72% 74%, ${THEME.blueSoft}99, transparent 54%)` }} />
           );
         }
         if (layer.kind === 'grid') {
@@ -85,7 +86,7 @@ export const BackgroundAtmosphere: React.FC<{
         }
         if (layer.kind === 'soft_light') {
           return (
-            <div key={layer.kind} style={{ position: 'absolute', inset: '-4%', opacity, mixBlendMode: 'soft-light', background: `radial-gradient(ellipse at ${anchor}, ${color}99, transparent 48%)`, transform: `translateY(${drift ? Math.sin(seconds * 0.18) * 1.2 : 0}%)` }} />
+            <div key={layer.kind} style={{ position: 'absolute', inset: '-4%', opacity, background: `radial-gradient(ellipse at ${anchor}, ${color}44, transparent 48%)`, transform: `translateY(${drift ? Math.sin(seconds * 0.18) * 1.2 : 0}%)` }} />
           );
         }
         if (layer.kind === 'geometry') {

@@ -11,14 +11,23 @@ import {
   isVisualFirstPreset,
 } from './graphics/CompositionPresets';
 import { BackgroundAtmosphere } from './graphics/BackgroundAtmosphere';
+import { THEME } from './graphics/theme';
 
-const ACCENT = '#78e0c2';
+const ACCENT = THEME.accent;
 
-export const SceneVisual: React.FC<{ scene: Scene; durationInFrames: number }> = ({
+export const SceneVisual: React.FC<{
+  scene: Scene;
+  durationInFrames: number;
+  frameOverride?: number;
+  hideChrome?: boolean;
+}> = ({
   scene,
   durationInFrames,
+  frameOverride,
+  hideChrome = false,
 }) => {
-  const frame = useCurrentFrame();
+  const sequenceFrame = useCurrentFrame();
+  const frame = frameOverride ?? sequenceFrame;
   const { fps, width, height } = useVideoConfig();
   const entranceFrames = Math.max(
     1,
@@ -97,11 +106,11 @@ export const SceneVisual: React.FC<{ scene: Scene; durationInFrames: number }> =
     <AbsoluteFill
       style={{
         background: scene.scene_type === 'statistic'
-          ? 'radial-gradient(circle at 76% 48%, rgba(120, 224, 194, .16), transparent 36%), #09111d'
+          ? `radial-gradient(circle at 76% 48%, ${THEME.accentSoft}99, transparent 38%), ${THEME.canvasWarm}`
           : ['diagram', 'process', 'timeline'].includes(scene.scene_type)
-            ? '#0b101b'
-            : 'radial-gradient(circle at 80% 12%, rgba(88, 135, 174, .22), transparent 38%), linear-gradient(145deg, #111a2a, #080c14 68%)',
-        color: '#f6f7fb',
+            ? THEME.canvasCool
+            : `radial-gradient(circle at 80% 12%, ${THEME.blueSoft}99, transparent 40%), linear-gradient(145deg, ${THEME.canvas}, #EFEEE8 72%)`,
+        color: THEME.text,
         fontFamily: 'Arial, sans-serif',
         justifyContent: 'center',
         alignItems: 'center',
@@ -173,7 +182,7 @@ export const SceneVisual: React.FC<{ scene: Scene; durationInFrames: number }> =
           <SceneDetails scene={scene} frame={frame} fps={fps} preset={preset} />
         </div>
       </div>
-      <SceneChrome order={scene.order} type={`${scene.scene_type} / ${preset}`} />
+      {!hideChrome ? <SceneChrome order={scene.order} type={`${scene.scene_type} / ${preset}`} /> : null}
     </AbsoluteFill>
   );
 };

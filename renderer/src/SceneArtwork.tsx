@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Scene } from './sceneTypes';
+import { THEME } from './graphics/theme';
 
 const hashId = (value: string): number =>
   [...value].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) >>> 0, 7);
@@ -10,7 +11,7 @@ export const SceneArtwork: React.FC<{ scene: Scene }> = ({ scene }) => {
   const seed = hashId(scene.scene_id);
   const x = 130 + (seed % 180);
   const y = 170 + ((seed >>> 5) % 180);
-  const accent = seed % 2 ? '#78e0c2' : '#8db6ff';
+  const accent = seed % 2 ? THEME.blue : THEME.accentBright;
 
   return (
     <svg
@@ -31,7 +32,7 @@ export const SceneArtwork: React.FC<{ scene: Scene }> = ({ scene }) => {
       <defs>
         <linearGradient id={`art-${scene.order}`} x1="0" x2="1" y1="0" y2="1">
           <stop offset="0" stopColor={accent} stopOpacity=".9" />
-          <stop offset="1" stopColor="#5976a7" stopOpacity=".12" />
+          <stop offset="1" stopColor={THEME.blue} stopOpacity=".12" />
         </linearGradient>
       </defs>
       {scene.scene_type === 'statistic' ? (
@@ -61,7 +62,7 @@ export const SceneArtwork: React.FC<{ scene: Scene }> = ({ scene }) => {
             width="142"
             height="142"
             rx="32"
-            fill="#0d1626"
+            fill={THEME.surface}
             fillOpacity=".8"
             stroke={accent}
             strokeOpacity=".65"

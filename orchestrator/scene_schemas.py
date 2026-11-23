@@ -55,7 +55,9 @@ MotionType = Literal[
 ]
 EmphasisMotion = Literal["none", "pulse", "scale", "underline"]
 TextRole = Literal["title", "subtitle", "label", "emphasis", "caption"]
-TransitionType = Literal["cut", "fade", "slide"]
+TransitionType = Literal["cut", "fade", "slide", "wipe", "push", "zoom", "mask", "shape_reveal"]
+TransitionDirection = Literal["left", "right", "up", "down"]
+TransitionShape = Literal["circle", "diamond", "ellipse"]
 GraphicType = Literal[
     "bar_chart", "line_graph", "progress_bar", "percentage_ring", "number_counter"
 ]
@@ -102,15 +104,15 @@ class OnScreenText(SceneModel):
 class SceneTransition(SceneModel):
     type: TransitionType = "cut"
     duration_seconds: NonNegativeSeconds = 0.0
+    direction: TransitionDirection = "left"
+    shape: TransitionShape = "circle"
 
     @model_validator(mode="after")
     def _check_duration(self) -> SceneTransition:
         if self.type == "cut" and self.duration_seconds != 0:
             raise ValueError("cut transitions must have zero duration")
-        if self.type != "cut" and not (
-            0 < self.duration_seconds <= MAX_TRANSITION_SECONDS
-        ):
-            raise ValueError("fade and slide transitions must be 0-2 seconds")
+        if self.type != "cut" and not (0 < self.duration_seconds <= MAX_TRANSITION_SECONDS):
+            raise ValueError("visual transitions must be 0-2 seconds")
         return self
 
 

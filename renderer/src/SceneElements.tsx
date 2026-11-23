@@ -2,14 +2,15 @@ import React from 'react';
 import type { Scene } from './sceneTypes';
 import { motionStyle, staggerDelayFrames } from './graphics/motion';
 import { SceneGraphicView } from './graphics/SceneGraphicView';
+import { THEME } from './graphics/theme';
 import type { CompositionPreset } from './graphics/CompositionPresets';
 import { isGroupedPreset } from './graphics/CompositionPresets';
 
 const colors = {
-  panel: 'rgba(22, 31, 49, 0.88)',
-  accent: '#78e0c2',
-  muted: '#aab4c7',
-  text: '#f6f7fb',
+  panel: THEME.surface,
+  accent: THEME.accent,
+  muted: THEME.body,
+  text: THEME.text,
 };
 
 const isVisible = (scene: Scene, index: number, frame: number, fps: number) => {
@@ -77,13 +78,13 @@ export const SceneBlocks: React.FC<{ scene: Scene; frame: number; fps: number; p
           padding: '28px 38px 34px',
           borderLeft: `5px solid ${colors.accent}`,
           borderRadius: '0 22px 22px 0',
-          background: 'linear-gradient(110deg, rgba(120,224,194,.12), rgba(22,31,49,.84))',
-          boxShadow: '0 18px 56px rgba(0,0,0,.24)',
+          background: `linear-gradient(110deg, ${THEME.accentSoft}99, ${THEME.surface})`,
+          boxShadow: `0 18px 56px ${THEME.shadow}`,
         }}
       >
         <div style={{ color: colors.accent, fontSize: 62, fontWeight: 800, lineHeight: .7, marginBottom: 18 }}>“</div>
         {items.slice(0, 2).map(({ item, index }) => (
-          <div key={`${item.text}-${index}`} style={{ color: '#f6f7fb', fontSize: 30, lineHeight: 1.3, ...revealStyle(frame, index, fps) }}>
+          <div key={`${item.text}-${index}`} style={{ color: colors.text, fontSize: 30, lineHeight: 1.3, ...revealStyle(frame, index, fps) }}>
             {item.text}
           </div>
         ))}
@@ -103,8 +104,8 @@ export const SceneBlocks: React.FC<{ scene: Scene; frame: number; fps: number; p
           padding: '18px 38px 24px',
           border: `1px solid ${colors.accent}88`,
           borderRadius: 28,
-          background: 'linear-gradient(140deg, rgba(120, 224, 194, .14), rgba(22, 31, 49, .9))',
-          boxShadow: '0 20px 70px rgba(0,0,0,.24)',
+          background: `linear-gradient(140deg, ${THEME.accentSoft}, ${THEME.surface})`,
+          boxShadow: `0 20px 70px ${THEME.shadow}`,
           ...revealStyle(frame, emphasis.index, fps),
         }}
       >
@@ -246,8 +247,8 @@ export const SceneBlocks: React.FC<{ scene: Scene; frame: number; fps: number; p
               minHeight: 86,
               padding: '22px 26px',
               borderRadius: 22,
-              background: index === 0 ? colors.panel : 'rgba(120, 224, 194, .12)',
-              border: `1px solid ${index === 0 ? '#ffffff22' : `${colors.accent}66`}`,
+              background: index === 0 ? colors.panel : THEME.accentSoft,
+              border: `1px solid ${index === 0 ? THEME.line : `${colors.accent}66`}`,
               color: index === 0 ? colors.muted : colors.text,
               fontSize: 27,
               textAlign: 'center',
@@ -331,7 +332,7 @@ export const SceneChrome: React.FC<{ order: number; type: string }> = ({ order, 
       right: '10%',
       display: 'flex',
       justifyContent: 'space-between',
-      color: '#718097',
+      color: THEME.subtle,
       fontSize: 18,
       letterSpacing: 3,
       textTransform: 'uppercase',
