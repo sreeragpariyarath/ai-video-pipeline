@@ -181,7 +181,7 @@ The output is `renderer/sample-output.mp4` (ignored by Git). Remotion accepts th
 
 ## 9. Phase 6 — Motion Graphics Library
 
-**Status: in progress.** Phase 6 expands the Phase 5 scene renderer into a reusable visual storytelling library. Keep graphics renderer-owned, frame-driven, deterministic, and tied to exact script narration when they show numeric data. Do not infer or invent metrics. Tasks 6.1–6.4 are implemented and reviewed in a rendered showcase; background atmosphere and cinematic transitions remain.
+**Status: in progress.** Phase 6 expands the Phase 5 scene renderer into a reusable visual storytelling library. Keep graphics renderer-owned, frame-driven, deterministic, and tied to exact script narration when they show numeric data. Do not infer or invent metrics. Tasks 6.1–6.5 are implemented and reviewed in a rendered showcase; cinematic transitions remain.
 
 ### Task 6.1 — Visual Component Library (implemented)
 - Shared animated heading, card/callout, and metric callout components.
@@ -203,8 +203,12 @@ The output is `renderer/sample-output.mp4` (ignored by Git). Remotion accepts th
 - The scene planner is prompted to choose a preset for each scene and only use a three-way comparison when it has three distinct items.
 - Legacy plans may use `auto`; application code resolves that to a deterministic preset based on scene type. The renderer validates explicit preset names and maps each preset to reusable layouts and components.
 
+### Task 6.5 — Background and Atmosphere (implemented initial set)
+- Added a closed atmosphere vocabulary for animated gradient shifts, grid, grain, particles, soft light, geometric marks, and depth/parallax layers. Each layer uses named palette and anchor tokens with deterministic, frame-driven motion.
+- Python and renderer validation cap layers at three per scene, intensity at 0.2 per layer and 0.35 combined, reject duplicate kinds, and keep grid, grain, and geometry static. Older scene plans without atmosphere retain the original background.
+
 ### Phase 6 showcase
-`renderer/sample-plan.json` now contains ten synthetic scenes that exercise all ten named composition presets and four narration-backed graphics: a line graph, three-value bar chart, percentage ring, and count-up. The plan is renderable with `cd renderer && npm run render:sample`. It is designed to evaluate readable visual variety and animation together; mock figures are demonstrative only and are not factual claims.
+`renderer/sample-plan.json` now contains ten synthetic scenes that exercise all ten named composition presets, seven atmosphere layer styles, and four narration-backed graphics: a line graph, three-value bar chart, percentage ring, and count-up. The plan is renderable with `cd renderer && npm run render:sample`. It is designed to evaluate readable visual variety and animation together; mock figures are demonstrative only and are not factual claims.
 
 ### Phase 6 implementation check
 - `npm run typecheck` passed after adding the graphics contract and shared motion utilities.
@@ -212,7 +216,6 @@ The output is `renderer/sample-output.mp4` (ignored by Git). Remotion accepts th
 - The showcase rendered 810 frames at 30 fps (27 seconds), 1080x1920 H.264. A contact sheet was reviewed to check the graph, comparison, process, ring, and count-up scenes together.
 
 ### Remaining Phase 6 tasks
-- **6.5 Background and atmosphere:** restrained grid, grain/noise, light, particles, geometric layers, and parallax treatments with deterministic settings.
 - **6.6 Cinematic transitions:** controlled wipes, pushes, zooms, masks, and shape reveals without frame loss or scene-duration overlap.
 
 ### Run and inspect the showcase

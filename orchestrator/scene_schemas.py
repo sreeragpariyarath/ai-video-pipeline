@@ -59,6 +59,12 @@ TransitionType = Literal["cut", "fade", "slide"]
 GraphicType = Literal[
     "bar_chart", "line_graph", "progress_bar", "percentage_ring", "number_counter"
 ]
+AtmosphereKind = Literal[
+    "gradient_shift", "grid", "grain", "particles", "soft_light", "geometry", "parallax"
+]
+AtmospherePalette = Literal["mint", "blue", "violet", "amber", "neutral"]
+AtmosphereAnchor = Literal["top_left", "top_right", "center", "bottom_left", "bottom_right"]
+AtmosphereMotion = Literal["static", "drift"]
 
 DURATION_TOLERANCE_SECONDS = 0.01
 MAX_TRANSITION_SECONDS = 2.0
@@ -154,6 +160,34 @@ class SceneGraphic(SceneModel):
         return self
 
 
+class BackgroundLayer(SceneModel):
+    """A restrained, renderer-owned background effect with no arbitrary CSS."""
+
+    kind: AtmosphereKind
+    palette: AtmospherePalette = "mint"
+    anchor: AtmosphereAnchor = "center"
+    motion: AtmosphereMotion = "static"
+    intensity: Annotated[float, Field(ge=0.0, le=0.2, allow_inf_nan=False), BeforeValidator(_reject_bool)] = 0.08
+
+    @model_validator(mode="after")
+    def _check_motion(self) -> BackgroundLayer:
+        if self.kind in {"grid", "grain", "geometry"} and self.motion != "static":
+            raise ValueError(f"{self.kind} atmosphere layers must be static")
+        return self
+
+
+class SceneAtmosphere(SceneModel):
+    layers: list[BackgroundLayer] = Field(default_factory=list, max_length=3)
+
+    @model_validator(mode="after")
+    def _check_layers(self) -> SceneAtmosphere:
+        if len({layer.kind for layer in self.layers}) != len(self.layers):
+            raise ValueError("atmosphere layer kinds must be unique")
+        if sum(layer.intensity for layer in self.layers) > 0.35:
+            raise ValueError("combined atmosphere intensity must not exceed 0.35")
+        return self
+
+
 class Scene(SceneModel):
     scene_id: NonEmptyStr
     order: PositiveInt
@@ -165,6 +199,7 @@ class Scene(SceneModel):
         str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)
     ]
     composition: SceneComposition
+    atmosphere: SceneAtmosphere = Field(default_factory=SceneAtmosphere)
     motion: SceneMotion = Field(default_factory=SceneMotion)
     on_screen_text: list[OnScreenText] = Field(default_factory=list)
     graphic: SceneGraphic | None = None

@@ -46,6 +46,17 @@
         "transition": {
           "type": "fade",
           "duration_seconds": 0.2
+        },
+        "atmosphere": {
+          "layers": [
+            {
+              "kind": "gradient_shift",
+              "palette": "mint",
+              "anchor": "top_right",
+              "motion": "drift",
+              "intensity": 0.12
+            }
+          ]
         }
       },
       {
@@ -87,6 +98,24 @@
         "transition": {
           "type": "slide",
           "duration_seconds": 0.2
+        },
+        "atmosphere": {
+          "layers": [
+            {
+              "kind": "grain",
+              "palette": "neutral",
+              "anchor": "center",
+              "motion": "static",
+              "intensity": 0.08
+            },
+            {
+              "kind": "soft_light",
+              "palette": "blue",
+              "anchor": "bottom_left",
+              "motion": "drift",
+              "intensity": 0.1
+            }
+          ]
         }
       },
       {
@@ -135,6 +164,24 @@
             {
               "label": "2024",
               "value_text": "20"
+            }
+          ]
+        },
+        "atmosphere": {
+          "layers": [
+            {
+              "kind": "grid",
+              "palette": "blue",
+              "anchor": "center",
+              "motion": "static",
+              "intensity": 0.07
+            },
+            {
+              "kind": "parallax",
+              "palette": "violet",
+              "anchor": "bottom_right",
+              "motion": "drift",
+              "intensity": 0.1
             }
           ]
         }
@@ -189,6 +236,17 @@
             {
               "label": "Plan C",
               "value_text": "$15"
+            }
+          ]
+        },
+        "atmosphere": {
+          "layers": [
+            {
+              "kind": "geometry",
+              "palette": "violet",
+              "anchor": "top_left",
+              "motion": "static",
+              "intensity": 0.1
             }
           ]
         }
@@ -250,6 +308,17 @@
         "transition": {
           "type": "slide",
           "duration_seconds": 0.2
+        },
+        "atmosphere": {
+          "layers": [
+            {
+              "kind": "particles",
+              "palette": "mint",
+              "anchor": "center",
+              "motion": "drift",
+              "intensity": 0.12
+            }
+          ]
         }
       },
       {
@@ -309,6 +378,17 @@
         "transition": {
           "type": "cut",
           "duration_seconds": 0.0
+        },
+        "atmosphere": {
+          "layers": [
+            {
+              "kind": "grid",
+              "palette": "neutral",
+              "anchor": "bottom_left",
+              "motion": "static",
+              "intensity": 0.06
+            }
+          ]
         }
       },
       {
@@ -361,6 +441,17 @@
               "value_text": "68%"
             }
           ]
+        },
+        "atmosphere": {
+          "layers": [
+            {
+              "kind": "gradient_shift",
+              "palette": "amber",
+              "anchor": "bottom_right",
+              "motion": "drift",
+              "intensity": 0.1
+            }
+          ]
         }
       },
       {
@@ -405,6 +496,17 @@
             {
               "label": "mock example",
               "value_text": "$3.5B"
+            }
+          ]
+        },
+        "atmosphere": {
+          "layers": [
+            {
+              "kind": "parallax",
+              "palette": "blue",
+              "anchor": "top_left",
+              "motion": "drift",
+              "intensity": 0.1
             }
           ]
         }
@@ -454,6 +556,17 @@
         "transition": {
           "type": "fade",
           "duration_seconds": 0.2
+        },
+        "atmosphere": {
+          "layers": [
+            {
+              "kind": "soft_light",
+              "palette": "violet",
+              "anchor": "top_right",
+              "motion": "drift",
+              "intensity": 0.1
+            }
+          ]
         }
       },
       {
@@ -495,6 +608,17 @@
         "transition": {
           "type": "cut",
           "duration_seconds": 0.0
+        },
+        "atmosphere": {
+          "layers": [
+            {
+              "kind": "particles",
+              "palette": "amber",
+              "anchor": "bottom_left",
+              "motion": "drift",
+              "intensity": 0.08
+            }
+          ]
         }
       }
     ],

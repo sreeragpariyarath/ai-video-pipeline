@@ -10,6 +10,7 @@ from .research_schemas import NonEmptyStr
 from .scene_schemas import (
     OnScreenText,
     Scene,
+    SceneAtmosphere,
     SceneComposition,
     SceneGraphic,
     SceneMotion,
@@ -27,6 +28,7 @@ class SceneDesign(BaseModel):
     script_segment_ids: list[NonEmptyStr] = Field(min_length=1)
     visual_description: NonEmptyStr
     composition: SceneComposition
+    atmosphere: SceneAtmosphere = Field(default_factory=SceneAtmosphere)
     motion: SceneMotion
     on_screen_text: list[OnScreenText]
     graphic: SceneGraphic | None = None
@@ -96,6 +98,7 @@ def _assemble(content: ScenePlanContent, script: VideoScript) -> ScenePlan:
                     narration_text=" ".join(s.narration for s in selected),
                     visual_description=design.visual_description,
                     composition=composition,
+                    atmosphere=design.atmosphere,
                     motion=design.motion,
                     on_screen_text=design.on_screen_text,
                     graphic=design.graphic,
@@ -147,7 +150,11 @@ class ScenePlanner:
                     "Use only the supplied scene types, composition presets, layout, motion, "
                     "text roles, and transitions. "
                     "Group every script segment exactly once, in order. Do not rewrite narration. "
-                    "IDs, timing, or invent unsupported visual primitives."
+                    "IDs, timing, or invent unsupported visual primitives. Choose up to three "
+                    "subtle atmosphere layers from gradient_shift, grid, grain, particles, "
+                    "soft_light, geometry, and parallax. Use only named palette/anchor tokens, "
+                    "intensity 0.0-0.2, combined intensity at most 0.35; keep static layers static. "
+                    "Never use random values or arbitrary CSS."
                 ),
                 prompt=(
                     f"Design renderer-friendly scenes for a {script.format} video.\n"
@@ -165,6 +172,7 @@ class ScenePlanner:
                     "must be an exact substring of that scene's narration. Never infer or invent "
                     "chart values. Use number_counter or progress graphics only for one datum; "
                     "use bar_chart or line_graph for multiple narrated data points. "
+                    "Atmosphere is optional and should be omitted when it does not help the story. "
                     "Return ScenePlanContent."
                 ),
                 schema=ScenePlanContent,

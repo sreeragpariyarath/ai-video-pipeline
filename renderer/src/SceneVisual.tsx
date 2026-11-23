@@ -10,6 +10,7 @@ import {
   compositionPresetFor,
   isVisualFirstPreset,
 } from './graphics/CompositionPresets';
+import { BackgroundAtmosphere } from './graphics/BackgroundAtmosphere';
 
 const ACCENT = '#78e0c2';
 
@@ -108,6 +109,7 @@ export const SceneVisual: React.FC<{ scene: Scene; durationInFrames: number }> =
         overflow: 'hidden',
       }}
     >
+      <BackgroundAtmosphere scene={scene} frame={frame} fps={fps} />
       {!isSplitVisual ? <SceneArtwork scene={scene} /> : null}
       {isHeroOverlay ? (
         <CompositionArtwork scene={scene} preset="hero_overlay" frame={frame} fps={fps} />

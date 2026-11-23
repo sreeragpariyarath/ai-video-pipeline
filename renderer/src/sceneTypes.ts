@@ -10,6 +10,14 @@ export type SceneType =
   | 'illustration'
   | 'conclusion';
 
+export type BackgroundLayer = {
+  kind: 'gradient_shift' | 'grid' | 'grain' | 'particles' | 'soft_light' | 'geometry' | 'parallax';
+  palette: 'mint' | 'blue' | 'violet' | 'amber' | 'neutral';
+  anchor: 'top_left' | 'top_right' | 'center' | 'bottom_left' | 'bottom_right';
+  motion: 'static' | 'drift';
+  intensity: number;
+};
+
 export type ScenePlan = {
   scene_plan_id: string;
   script_id: string;
@@ -36,6 +44,7 @@ export type Scene = {
     hierarchy: 'text_first' | 'visual_first' | 'balanced';
     viewport: 'static' | 'push_in' | 'pull_out' | 'pan_left' | 'pan_right';
   };
+  atmosphere?: { layers: BackgroundLayer[] };
   motion: {
     entrance: 'none' | 'fade' | 'slide_up' | 'slide_down' | 'slide_left' | 'slide_right' | 'scale' | 'pop' | 'blur_reveal';
     exit: 'none' | 'fade' | 'slide_up' | 'slide_down' | 'slide_left' | 'slide_right' | 'scale' | 'pop' | 'blur_reveal';
@@ -186,6 +195,34 @@ const validateSceneCapabilities = (scene: Scene): void => {
 
   if (!scene.composition || !contains(layouts, scene.composition.layout)) {
     throw new Error(`Scene ${scene.scene_id} has an unsupported layout.`);
+  }
+  const layers = scene.atmosphere?.layers ?? [];
+  if (!Array.isArray(layers) || layers.length > 3) {
+    throw new Error(`Scene ${scene.scene_id} atmosphere supports at most three layers.`);
+  }
+  const atmosphereKinds = new Set<string>();
+  let atmosphereIntensity = 0;
+  layers.forEach((layer) => {
+    if (!layer || !contains(['gradient_shift', 'grid', 'grain', 'particles', 'soft_light', 'geometry', 'parallax'], layer.kind) ||
+      !contains(['mint', 'blue', 'violet', 'amber', 'neutral'], layer.palette) ||
+      !contains(['top_left', 'top_right', 'center', 'bottom_left', 'bottom_right'], layer.anchor) ||
+      !contains(['static', 'drift'], layer.motion)) {
+      throw new Error(`Scene ${scene.scene_id} has an unsupported atmosphere layer.`);
+    }
+    if (!Number.isFinite(layer.intensity) || layer.intensity < 0 || layer.intensity > 0.2) {
+      throw new Error(`Scene ${scene.scene_id} atmosphere intensity must be between 0 and 0.2.`);
+    }
+    if (['grid', 'grain', 'geometry'].includes(layer.kind) && layer.motion !== 'static') {
+      throw new Error(`Scene ${scene.scene_id} ${layer.kind} atmosphere must be static.`);
+    }
+    if (atmosphereKinds.has(layer.kind)) {
+      throw new Error(`Scene ${scene.scene_id} atmosphere layer kinds must be unique.`);
+    }
+    atmosphereKinds.add(layer.kind);
+    atmosphereIntensity += layer.intensity;
+  });
+  if (atmosphereIntensity > 0.35) {
+    throw new Error(`Scene ${scene.scene_id} combined atmosphere intensity must not exceed 0.35.`);
   }
   const compositionPresets = [
     'auto', 'headline', 'number_explainer', 'comparison_two', 'comparison_three',
